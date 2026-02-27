@@ -1,6 +1,7 @@
 export interface CVData {
   personalInfo: {
     fullName: string;
+    jobTitle: string;   // ← YANGI: lavozim/kasb
     phone: string;
     email: string;
     address: string;
@@ -76,7 +77,6 @@ export type TemplateType =
   | 't091' | 't092' | 't093' | 't094' | 't095'
   | 't096' | 't097' | 't098' | 't099' | 't100';
 
-// ✅ TUZATILDI: faqat 3 ta emas, 24 ta rang
 export type AccentColor =
   | 'blue' | 'sky' | 'cyan' | 'teal' | 'green' | 'emerald'
   | 'lime' | 'yellow' | 'amber' | 'orange' | 'red' | 'rose'
@@ -88,6 +88,7 @@ export type FontType = 'Inter' | 'Poppins' | 'Roboto';
 export const defaultCVData: CVData = {
   personalInfo: {
     fullName: '',
+    jobTitle: '',   // ← YANGI
     phone: '',
     email: '',
     address: '',

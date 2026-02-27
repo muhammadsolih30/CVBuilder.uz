@@ -370,21 +370,74 @@ export default function CVPreview({ data, onBack }: Props) {
     </div>
   );
 
+  // SVG ikonlar — PDF da to'g'ri chiqadi, emoji cho'zilmaydi
+  const Icon = ({ d, color }: { d: string; color: string }) => (
+    <svg
+      width="11"
+      height="11"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{
+        display: "inline-block",
+        verticalAlign: "middle",
+        flexShrink: 0,
+      }}
+    >
+      <path d={d} />
+    </svg>
+  );
+  const ICONS = {
+    phone:
+      "M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8a19.79 19.79 0 01-3.07-8.67A2 2 0 012 .84h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.64a16 16 0 006.29 6.29l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z",
+    email:
+      "M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z M22 6l-10 7L2 6",
+    location:
+      "M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z M12 10a3 3 0 100-6 3 3 0 000 6",
+    linkedin:
+      "M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6z M2 9h4v12H2z M4 6a2 2 0 100-4 2 2 0 000 4",
+    telegram: "M22 2L11 13 M22 2l-7 20-4-9-9-4 20-7z",
+  };
+
   const ContactLine = ({ color }: { color: string }) => (
     <div
       style={{
         display: "flex",
         flexWrap: "wrap",
-        gap: 12,
-        fontSize: 9.5,
+        gap: 10,
+        fontSize: 10,
         color,
+        alignItems: "center",
       }}
     >
-      {p.phone && <span>📞 {p.phone}</span>}
-      {p.email && <span>✉️ {p.email}</span>}
-      {p.address && <span>📍 {p.address}</span>}
-      {p.linkedin && <span>🔗 {p.linkedin}</span>}
-      {p.telegram && <span>💬 {p.telegram}</span>}
+      {p.phone && (
+        <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <Icon d={ICONS.phone} color={color} /> {p.phone}
+        </span>
+      )}
+      {p.email && (
+        <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <Icon d={ICONS.email} color={color} /> {p.email}
+        </span>
+      )}
+      {p.address && (
+        <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <Icon d={ICONS.location} color={color} /> {p.address}
+        </span>
+      )}
+      {p.linkedin && (
+        <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <Icon d={ICONS.linkedin} color={color} /> {p.linkedin}
+        </span>
+      )}
+      {p.telegram && (
+        <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <Icon d={ICONS.telegram} color={color} /> {p.telegram}
+        </span>
+      )}
     </div>
   );
 
@@ -866,42 +919,75 @@ export default function CVPreview({ data, onBack }: Props) {
                     KONTAKT
                   </p>
                   {p.phone && (
-                    <p style={{ fontSize: 8.5, marginBottom: 5, opacity: 0.9 }}>
-                      📞 {p.phone}
+                    <p
+                      style={{
+                        fontSize: 10,
+                        marginBottom: 6,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 5,
+                      }}
+                    >
+                      <Icon d={ICONS.phone} color="rgba(255,255,255,0.8)" />{" "}
+                      {p.phone}
                     </p>
                   )}
                   {p.email && (
                     <p
                       style={{
-                        fontSize: 8.5,
-                        marginBottom: 5,
-                        opacity: 0.9,
+                        fontSize: 10,
+                        marginBottom: 6,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 5,
                         wordBreak: "break-all",
                       }}
                     >
-                      ✉️ {p.email}
+                      <Icon d={ICONS.email} color="rgba(255,255,255,0.8)" />{" "}
+                      {p.email}
                     </p>
                   )}
                   {p.address && (
-                    <p style={{ fontSize: 8.5, marginBottom: 5, opacity: 0.9 }}>
-                      📍 {p.address}
+                    <p
+                      style={{
+                        fontSize: 10,
+                        marginBottom: 6,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 5,
+                      }}
+                    >
+                      <Icon d={ICONS.location} color="rgba(255,255,255,0.8)" />{" "}
+                      {p.address}
                     </p>
                   )}
                   {p.linkedin && (
                     <p
                       style={{
-                        fontSize: 8.5,
-                        marginBottom: 5,
-                        opacity: 0.9,
+                        fontSize: 10,
+                        marginBottom: 6,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 5,
                         wordBreak: "break-all",
                       }}
                     >
-                      🔗 {p.linkedin}
+                      <Icon d={ICONS.linkedin} color="rgba(255,255,255,0.8)" />{" "}
+                      {p.linkedin}
                     </p>
                   )}
                   {p.telegram && (
-                    <p style={{ fontSize: 8.5, marginBottom: 5, opacity: 0.9 }}>
-                      💬 {p.telegram}
+                    <p
+                      style={{
+                        fontSize: 10,
+                        marginBottom: 6,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 5,
+                      }}
+                    >
+                      <Icon d={ICONS.telegram} color="rgba(255,255,255,0.8)" />{" "}
+                      {p.telegram}
                     </p>
                   )}
                 </div>
@@ -1467,47 +1553,74 @@ export default function CVPreview({ data, onBack }: Props) {
                   </p>
                   {p.phone && (
                     <p
-                      style={{ fontSize: 9, marginBottom: 5, color: "#374151" }}
+                      style={{
+                        fontSize: 10,
+                        marginBottom: 6,
+                        color: "#374151",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 5,
+                      }}
                     >
-                      📞 {p.phone}
+                      <Icon d={ICONS.phone} color="#64748b" /> {p.phone}
                     </p>
                   )}
                   {p.email && (
                     <p
                       style={{
-                        fontSize: 9,
-                        marginBottom: 5,
+                        fontSize: 10,
+                        marginBottom: 6,
                         color: "#374151",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 5,
                         wordBreak: "break-all",
                       }}
                     >
-                      ✉️ {p.email}
+                      <Icon d={ICONS.email} color="#64748b" /> {p.email}
                     </p>
                   )}
                   {p.address && (
                     <p
-                      style={{ fontSize: 9, marginBottom: 5, color: "#374151" }}
+                      style={{
+                        fontSize: 10,
+                        marginBottom: 6,
+                        color: "#374151",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 5,
+                      }}
                     >
-                      📍 {p.address}
+                      <Icon d={ICONS.location} color="#64748b" /> {p.address}
                     </p>
                   )}
                   {p.linkedin && (
                     <p
                       style={{
-                        fontSize: 9,
-                        marginBottom: 5,
+                        fontSize: 10,
+                        marginBottom: 6,
                         color: "#374151",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 5,
                         wordBreak: "break-all",
                       }}
                     >
-                      🔗 {p.linkedin}
+                      <Icon d={ICONS.linkedin} color="#64748b" /> {p.linkedin}
                     </p>
                   )}
                   {p.telegram && (
                     <p
-                      style={{ fontSize: 9, marginBottom: 5, color: "#374151" }}
+                      style={{
+                        fontSize: 10,
+                        marginBottom: 6,
+                        color: "#374151",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 5,
+                      }}
                     >
-                      💬 {p.telegram}
+                      <Icon d={ICONS.telegram} color="#64748b" /> {p.telegram}
                     </p>
                   )}
                 </div>
@@ -1719,11 +1832,11 @@ export default function CVPreview({ data, onBack }: Props) {
                     marginBottom: 10,
                   }}
                 >
-                  {p.phone && <span>📞 {p.phone}</span>}
-                  {p.email && <span>✉️ {p.email}</span>}
-                  {p.address && <span>📍 {p.address}</span>}
-                  {p.linkedin && <span>🔗 {p.linkedin}</span>}
-                  {p.telegram && <span>💬 {p.telegram}</span>}
+               {p.phone    && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Icon d={ICONS.phone}    color="#64748b" /> {p.phone}</span>}
+                  {p.email    && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Icon d={ICONS.email}    color="#64748b" /> {p.email}</span>}
+                  {p.address  && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Icon d={ICONS.location} color="#64748b" /> {p.address}</span>}
+                  {p.linkedin && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Icon d={ICONS.linkedin} color="#64748b" /> {p.linkedin}</span>}
+                  {p.telegram && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Icon d={ICONS.telegram} color="#64748b" /> {p.telegram}</span>}
                 </div>
                 <div
                   style={{
