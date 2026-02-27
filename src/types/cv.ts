@@ -20,6 +20,7 @@ export interface CVData {
   template: TemplateType;
   accentColor: AccentColor;
   font: FontType;
+  fontSize: number;
 }
 
 export interface WorkExperience {
@@ -104,4 +105,5 @@ export const defaultCVData: CVData = {
   template: 't001',
   accentColor: 'blue',
   font: 'Inter',
+  fontSize: 22,
 };

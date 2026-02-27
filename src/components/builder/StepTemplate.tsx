@@ -1175,7 +1175,7 @@ export default function StepTemplate({ data, onChange }: Props) {
   const safeTemplate = (data?.template as string) || "t001";
   const safeColor = data?.accentColor || "blue";
   const safeFont = data?.font || "Inter";
-  const safeFontSize = data?.fontSize ?? 15;
+  const safeFontSize = data?.fontSize ?? 22;
 
   const accentHex = COLORS.find((c) => c.key === safeColor)?.hex || "#2563eb";
 
@@ -1334,7 +1334,7 @@ export default function StepTemplate({ data, onChange }: Props) {
         <div className="flex justify-between mt-2 px-8">
           <span className="text-[10px] text-muted-foreground">Kichik</span>
           <span className="text-[10px] text-muted-foreground">
-            Default (15px)
+            Default (22px)
           </span>
           <span className="text-[10px] text-muted-foreground">Katta</span>
         </div>

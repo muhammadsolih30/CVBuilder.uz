@@ -1,7 +1,7 @@
+import React, { useRef, useState, useLayoutEffect } from "react";
 import { CVData } from "@/types/cv";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Download, Eye } from "lucide-react";
-import { useRef, useState } from "react";
 import html2pdf from "html2pdf.js";
 
 interface Props {
@@ -271,6 +271,47 @@ function resolveConfig(templateKey: string, accentHex: string): TplConfig {
     dark: false,
     accentHex,
   };
+}
+
+// ─── Mobile scale wrapper ──────────────────────────────────
+function CvScaleWrapper({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  useLayoutEffect(() => {
+    function update() {
+      const vw = window.innerWidth;
+      const available = vw - 16;
+      setScale(available < 794 ? available / 794 : 1);
+    }
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      style={{
+        width: "100%",
+        display: "flex",
+        justifyContent: "center",
+        paddingTop: "2rem",
+        paddingBottom:
+          scale < 1 ? `calc(${(1 - scale) * 297}mm + 2rem)` : "2rem",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          transformOrigin: "top center",
+          transform: `scale(${scale})`,
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
 }
 
 export default function CVPreview({ data, onBack }: Props) {
@@ -642,7 +683,7 @@ export default function CVPreview({ data, onBack }: Props) {
         </div>
       </div>
 
-      <div className="flex justify-center py-8 px-4 overflow-x-auto">
+      <CvScaleWrapper>
         <div
           ref={cvRef}
           style={{
@@ -651,7 +692,7 @@ export default function CVPreview({ data, onBack }: Props) {
             minHeight: "297mm",
             fontFamily: `'${data.font}', ${data.font}, Arial, sans-serif`,
             color: bodyText,
-            fontSize: `${data.fontSize ?? 15}px`,
+            fontSize: `${data.fontSize ?? 22}px`,
             lineHeight: "1.6",
             backgroundColor: pageBg,
             boxShadow: "0 4px 32px rgba(0,0,0,0.15)",
@@ -1890,7 +1931,7 @@ export default function CVPreview({ data, onBack }: Props) {
             </div>
           )}
         </div>
-      </div>
+      </CvScaleWrapper>
     </div>
   );
 }

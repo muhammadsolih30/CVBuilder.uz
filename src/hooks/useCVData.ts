@@ -24,6 +24,7 @@ export function useCVData() {
           technical: parsed.skills?.technical ?? defaultCVData.skills.technical,
           soft: parsed.skills?.soft ?? defaultCVData.skills.soft,
         },
+        fontSize: parsed.fontSize ?? 22,
       };
     } catch {
       return defaultCVData;
