@@ -334,9 +334,12 @@ export default function CVPreview({ data, onBack }: Props) {
   const subText = dark ? "#94a3b8" : "#6b7280";
   const lineColor = dark ? "#1e293b" : "#e2e8f0";
 
+  // Font size scale — barcha yozuvlar shu asosda oʼlchadi
+  const fs = (data.fontSize ?? 15) / 15;
+
   const SH = ({ color, border }: { color: string; border?: string }) =>
     ({
-      fontSize: 10,
+      fontSize: 10 * fs,
       fontWeight: "bold" as const,
       textTransform: "uppercase" as const,
       letterSpacing: "0.1em",
@@ -408,7 +411,7 @@ export default function CVPreview({ data, onBack }: Props) {
         display: "flex",
         flexWrap: "wrap",
         gap: 10,
-        fontSize: 10,
+        fontSize: 10 * fs,
         color,
         alignItems: "center",
       }}
@@ -460,12 +463,12 @@ export default function CVPreview({ data, onBack }: Props) {
               alignItems: "flex-start",
             }}
           >
-            <p style={{ fontWeight: 600, fontSize: 11, color: bodyText }}>
+            <p style={{ fontWeight: 600, fontSize: 11 * fs, color: bodyText }}>
               {w.jobTitle}
             </p>
             <p
               style={{
-                fontSize: 9,
+                fontSize: 9 * fs,
                 color: subText,
                 flexShrink: 0,
                 marginLeft: 8,
@@ -474,14 +477,14 @@ export default function CVPreview({ data, onBack }: Props) {
               {w.startDate} — {w.current ? "Hozir" : w.endDate}
             </p>
           </div>
-          <p style={{ fontSize: 10, color: acol, marginBottom: 2 }}>
+          <p style={{ fontSize: 10 * fs, color: acol, marginBottom: 2 }}>
             {w.company}
             {w.location ? ` · ${w.location}` : ""}
           </p>
           {w.description && (
             <p
               style={{
-                fontSize: 9.5,
+                fontSize: 9.5 * fs,
                 color: subText,
                 whiteSpace: "pre-line",
                 lineHeight: 1.6,
@@ -507,12 +510,12 @@ export default function CVPreview({ data, onBack }: Props) {
               alignItems: "flex-start",
             }}
           >
-            <p style={{ fontWeight: 600, fontSize: 11, color: bodyText }}>
+            <p style={{ fontWeight: 600, fontSize: 11 * fs, color: bodyText }}>
               {e.degree}
             </p>
             <p
               style={{
-                fontSize: 9,
+                fontSize: 9 * fs,
                 color: subText,
                 flexShrink: 0,
                 marginLeft: 8,
@@ -521,9 +524,9 @@ export default function CVPreview({ data, onBack }: Props) {
               {e.startYear} — {e.endYear}
             </p>
           </div>
-          <p style={{ fontSize: 10, color: acol }}>{e.university}</p>
+          <p style={{ fontSize: 10 * fs, color: acol }}>{e.university}</p>
           {e.description && (
-            <p style={{ fontSize: 9.5, color: subText, marginTop: 2 }}>
+            <p style={{ fontSize: 9.5 * fs, color: subText, marginTop: 2 }}>
               {e.description}
             </p>
           )}
@@ -546,7 +549,9 @@ export default function CVPreview({ data, onBack }: Props) {
           <p style={SH({ color: acol })}>KO'NIKMALAR</p>
           {[...skills.technical, ...skills.soft].map((s) => (
             <div key={s.id} style={{ marginBottom: 7 }}>
-              <p style={{ fontSize: 10, marginBottom: 2, color: bodyText }}>
+              <p
+                style={{ fontSize: 10 * fs, marginBottom: 2, color: bodyText }}
+              >
                 {s.name}
               </p>
               <Dots level={s.level} fg={acol} bg={dotEmpty} />
@@ -560,7 +565,7 @@ export default function CVPreview({ data, onBack }: Props) {
           {languages.map((l) => (
             <p
               key={l.id}
-              style={{ fontSize: 10, marginBottom: 5, color: bodyText }}
+              style={{ fontSize: 10 * fs, marginBottom: 5, color: bodyText }}
             >
               {l.name} — <span style={{ color: subText }}>{l.level}</span>
             </p>
@@ -578,7 +583,7 @@ export default function CVPreview({ data, onBack }: Props) {
           <p style={SH({ color: acol })}>PROFIL</p>
           <p
             style={{
-              fontSize: 10,
+              fontSize: 10 * fs,
               lineHeight: 1.7,
               color: dark ? "#cbd5e1" : "#374151",
             }}
@@ -646,7 +651,7 @@ export default function CVPreview({ data, onBack }: Props) {
             minHeight: "297mm",
             fontFamily: `'${data.font}', ${data.font}, Arial, sans-serif`,
             color: bodyText,
-            fontSize: "11px",
+            fontSize: `${data.fontSize ?? 15}px`,
             lineHeight: "1.6",
             backgroundColor: pageBg,
             boxShadow: "0 4px 32px rgba(0,0,0,0.15)",
@@ -683,7 +688,7 @@ export default function CVPreview({ data, onBack }: Props) {
                   <div>
                     <h1
                       style={{
-                        fontSize: 20,
+                        fontSize: 20 * fs,
                         fontWeight: "bold",
                         color: bodyText,
                         marginBottom: 4,
@@ -721,7 +726,7 @@ export default function CVPreview({ data, onBack }: Props) {
                       style={{
                         width: 72,
                         height: 72,
-                        borderRadius: 6,
+                        borderRadius: "50%",
                         objectFit: "cover",
                         flexShrink: 0,
                         border: "2px solid rgba(255,255,255,0.4)",
@@ -731,7 +736,7 @@ export default function CVPreview({ data, onBack }: Props) {
                   <div>
                     <h1
                       style={{
-                        fontSize: 22,
+                        fontSize: 22 * fs,
                         fontWeight: "bold",
                         color: "#fff",
                         marginBottom: 6,
@@ -756,7 +761,7 @@ export default function CVPreview({ data, onBack }: Props) {
                     <p style={SH({ color: headerColor })}>PROFIL</p>
                     <p
                       style={{
-                        fontSize: 10,
+                        fontSize: 10 * fs,
                         lineHeight: 1.7,
                         color: "#374151",
                       }}
@@ -777,7 +782,7 @@ export default function CVPreview({ data, onBack }: Props) {
                             alignItems: "flex-start",
                           }}
                         >
-                          <p style={{ fontWeight: 600, fontSize: 11 }}>
+                          <p style={{ fontWeight: 600, fontSize: 11 * fs }}>
                             {w.jobTitle}
                             {w.company && (
                               <span style={{ color: headerColor }}>
@@ -788,7 +793,7 @@ export default function CVPreview({ data, onBack }: Props) {
                           </p>
                           <p
                             style={{
-                              fontSize: 9,
+                              fontSize: 9 * fs,
                               color: "#94a3b8",
                               flexShrink: 0,
                               marginLeft: 8,
@@ -798,14 +803,14 @@ export default function CVPreview({ data, onBack }: Props) {
                           </p>
                         </div>
                         {w.location && (
-                          <p style={{ fontSize: 9.5, color: "#64748b" }}>
+                          <p style={{ fontSize: 9.5 * fs, color: "#64748b" }}>
                             {w.location}
                           </p>
                         )}
                         {w.description && (
                           <p
                             style={{
-                              fontSize: 9.5,
+                              fontSize: 9.5 * fs,
                               marginTop: 3,
                               whiteSpace: "pre-line",
                               lineHeight: 1.6,
@@ -831,7 +836,7 @@ export default function CVPreview({ data, onBack }: Props) {
                             alignItems: "flex-start",
                           }}
                         >
-                          <p style={{ fontWeight: 600, fontSize: 11 }}>
+                          <p style={{ fontWeight: 600, fontSize: 11 * fs }}>
                             {e.degree}
                             {e.university && (
                               <span style={{ color: headerColor }}>
@@ -842,7 +847,7 @@ export default function CVPreview({ data, onBack }: Props) {
                           </p>
                           <p
                             style={{
-                              fontSize: 9,
+                              fontSize: 9 * fs,
                               color: "#94a3b8",
                               flexShrink: 0,
                               marginLeft: 8,
@@ -852,7 +857,7 @@ export default function CVPreview({ data, onBack }: Props) {
                           </p>
                         </div>
                         {e.description && (
-                          <p style={{ fontSize: 9.5, color: "#64748b" }}>
+                          <p style={{ fontSize: 9.5 * fs, color: "#64748b" }}>
                             {e.description}
                           </p>
                         )}
@@ -897,7 +902,7 @@ export default function CVPreview({ data, onBack }: Props) {
                 )}
                 <h1
                   style={{
-                    fontSize: 14,
+                    fontSize: 14 * fs,
                     fontWeight: "bold",
                     marginBottom: 4,
                     lineHeight: 1.3,
@@ -908,7 +913,7 @@ export default function CVPreview({ data, onBack }: Props) {
                 <div style={{ marginTop: 16 }}>
                   <p
                     style={{
-                      fontSize: 8.5,
+                      fontSize: 8.5 * fs,
                       fontWeight: "bold",
                       textTransform: "uppercase",
                       letterSpacing: "0.1em",
@@ -921,7 +926,7 @@ export default function CVPreview({ data, onBack }: Props) {
                   {p.phone && (
                     <p
                       style={{
-                        fontSize: 10,
+                        fontSize: 10 * fs,
                         marginBottom: 6,
                         display: "flex",
                         alignItems: "center",
@@ -935,7 +940,7 @@ export default function CVPreview({ data, onBack }: Props) {
                   {p.email && (
                     <p
                       style={{
-                        fontSize: 10,
+                        fontSize: 10 * fs,
                         marginBottom: 6,
                         display: "flex",
                         alignItems: "center",
@@ -950,7 +955,7 @@ export default function CVPreview({ data, onBack }: Props) {
                   {p.address && (
                     <p
                       style={{
-                        fontSize: 10,
+                        fontSize: 10 * fs,
                         marginBottom: 6,
                         display: "flex",
                         alignItems: "center",
@@ -964,7 +969,7 @@ export default function CVPreview({ data, onBack }: Props) {
                   {p.linkedin && (
                     <p
                       style={{
-                        fontSize: 10,
+                        fontSize: 10 * fs,
                         marginBottom: 6,
                         display: "flex",
                         alignItems: "center",
@@ -979,7 +984,7 @@ export default function CVPreview({ data, onBack }: Props) {
                   {p.telegram && (
                     <p
                       style={{
-                        fontSize: 10,
+                        fontSize: 10 * fs,
                         marginBottom: 6,
                         display: "flex",
                         alignItems: "center",
@@ -995,7 +1000,7 @@ export default function CVPreview({ data, onBack }: Props) {
                   <div style={{ marginTop: 20 }}>
                     <p
                       style={{
-                        fontSize: 8.5,
+                        fontSize: 8.5 * fs,
                         fontWeight: "bold",
                         textTransform: "uppercase",
                         letterSpacing: "0.1em",
@@ -1007,7 +1012,7 @@ export default function CVPreview({ data, onBack }: Props) {
                     </p>
                     {[...skills.technical, ...skills.soft].map((s) => (
                       <div key={s.id} style={{ marginBottom: 8 }}>
-                        <p style={{ fontSize: 8.5, marginBottom: 3 }}>
+                        <p style={{ fontSize: 8.5 * fs, marginBottom: 3 }}>
                           {s.name}
                         </p>
                         <Dots
@@ -1023,7 +1028,7 @@ export default function CVPreview({ data, onBack }: Props) {
                   <div style={{ marginTop: 20 }}>
                     <p
                       style={{
-                        fontSize: 8.5,
+                        fontSize: 8.5 * fs,
                         fontWeight: "bold",
                         textTransform: "uppercase",
                         letterSpacing: "0.1em",
@@ -1036,7 +1041,11 @@ export default function CVPreview({ data, onBack }: Props) {
                     {languages.map((l) => (
                       <p
                         key={l.id}
-                        style={{ fontSize: 8.5, marginBottom: 5, opacity: 0.9 }}
+                        style={{
+                          fontSize: 8.5 * fs,
+                          marginBottom: 5,
+                          opacity: 0.9,
+                        }}
                       >
                         {l.name} — {l.level}
                       </p>
@@ -1050,7 +1059,7 @@ export default function CVPreview({ data, onBack }: Props) {
                     <p style={SH({ color: headerColor })}>PROFIL</p>
                     <p
                       style={{
-                        fontSize: 10,
+                        fontSize: 10 * fs,
                         lineHeight: 1.7,
                         color: "#374151",
                       }}
@@ -1106,7 +1115,7 @@ export default function CVPreview({ data, onBack }: Props) {
                       style={{
                         width: 70,
                         height: 70,
-                        borderRadius: 8,
+                        borderRadius: "50%",
                         objectFit: "cover",
                         flexShrink: 0,
                         border: `2px solid ${accentHex}`,
@@ -1116,7 +1125,7 @@ export default function CVPreview({ data, onBack }: Props) {
                   <div>
                     <h1
                       style={{
-                        fontSize: 20,
+                        fontSize: 20 * fs,
                         fontWeight: "bold",
                         color: "#f8fafc",
                         marginBottom: 6,
@@ -1139,7 +1148,7 @@ export default function CVPreview({ data, onBack }: Props) {
                     </p>
                     <p
                       style={{
-                        fontSize: 10,
+                        fontSize: 10 * fs,
                         color: "#cbd5e1",
                         lineHeight: 1.7,
                       }}
@@ -1177,7 +1186,7 @@ export default function CVPreview({ data, onBack }: Props) {
                           <p
                             style={{
                               fontWeight: 600,
-                              fontSize: 11,
+                              fontSize: 11 * fs,
                               color: "#e2e8f0",
                             }}
                           >
@@ -1185,7 +1194,7 @@ export default function CVPreview({ data, onBack }: Props) {
                           </p>
                           <p
                             style={{
-                              fontSize: 9,
+                              fontSize: 9 * fs,
                               color: "#475569",
                               flexShrink: 0,
                               marginLeft: 8,
@@ -1196,7 +1205,7 @@ export default function CVPreview({ data, onBack }: Props) {
                         </div>
                         <p
                           style={{
-                            fontSize: 10,
+                            fontSize: 10 * fs,
                             color: accentHex,
                             marginBottom: 2,
                           }}
@@ -1207,7 +1216,7 @@ export default function CVPreview({ data, onBack }: Props) {
                         {w.description && (
                           <p
                             style={{
-                              fontSize: 9.5,
+                              fontSize: 9.5 * fs,
                               color: "#94a3b8",
                               whiteSpace: "pre-line",
                               lineHeight: 1.6,
@@ -1249,7 +1258,7 @@ export default function CVPreview({ data, onBack }: Props) {
                           <p
                             style={{
                               fontWeight: 600,
-                              fontSize: 11,
+                              fontSize: 11 * fs,
                               color: "#e2e8f0",
                             }}
                           >
@@ -1257,7 +1266,7 @@ export default function CVPreview({ data, onBack }: Props) {
                           </p>
                           <p
                             style={{
-                              fontSize: 9,
+                              fontSize: 9 * fs,
                               color: "#475569",
                               flexShrink: 0,
                               marginLeft: 8,
@@ -1266,13 +1275,13 @@ export default function CVPreview({ data, onBack }: Props) {
                             {e.startYear} — {e.endYear}
                           </p>
                         </div>
-                        <p style={{ fontSize: 10, color: accentHex }}>
+                        <p style={{ fontSize: 10 * fs, color: accentHex }}>
                           {e.university}
                         </p>
                         {e.description && (
                           <p
                             style={{
-                              fontSize: 9.5,
+                              fontSize: 9.5 * fs,
                               color: "#94a3b8",
                               marginTop: 2,
                             }}
@@ -1326,7 +1335,7 @@ export default function CVPreview({ data, onBack }: Props) {
                   <div>
                     <h1
                       style={{
-                        fontSize: 20,
+                        fontSize: 20 * fs,
                         fontWeight: "bold",
                         color: headerColor,
                         marginBottom: 5,
@@ -1380,7 +1389,7 @@ export default function CVPreview({ data, onBack }: Props) {
                   <div>
                     <h1
                       style={{
-                        fontSize: 20,
+                        fontSize: 20 * fs,
                         fontWeight: "bold",
                         color: headerColor,
                         marginBottom: 5,
@@ -1430,7 +1439,7 @@ export default function CVPreview({ data, onBack }: Props) {
                       style={{
                         width: 68,
                         height: 68,
-                        borderRadius: 8,
+                        borderRadius: "50%",
                         objectFit: "cover",
                         flexShrink: 0,
                         border: `2px solid ${accentHex}`,
@@ -1440,7 +1449,7 @@ export default function CVPreview({ data, onBack }: Props) {
                   <div>
                     <h1
                       style={{
-                        fontSize: 20,
+                        fontSize: 20 * fs,
                         fontWeight: "bold",
                         color: headerColor,
                         marginBottom: 5,
@@ -1478,7 +1487,7 @@ export default function CVPreview({ data, onBack }: Props) {
                       style={{
                         width: 68,
                         height: 68,
-                        borderRadius: 8,
+                        borderRadius: "50%",
                         objectFit: "cover",
                         marginBottom: 10,
                       }}
@@ -1486,7 +1495,7 @@ export default function CVPreview({ data, onBack }: Props) {
                   )}
                   <h1
                     style={{
-                      fontSize: 18,
+                      fontSize: 18 * fs,
                       fontWeight: "bold",
                       color: headerColor,
                       marginBottom: 5,
@@ -1507,7 +1516,7 @@ export default function CVPreview({ data, onBack }: Props) {
                     <p style={SH({ color: accentHex })}>PROFIL</p>
                     <p
                       style={{
-                        fontSize: 10,
+                        fontSize: 10 * fs,
                         lineHeight: 1.7,
                         color: "#374151",
                       }}
@@ -1541,7 +1550,7 @@ export default function CVPreview({ data, onBack }: Props) {
                 <div style={{ marginBottom: 16 }}>
                   <p
                     style={{
-                      fontSize: 9,
+                      fontSize: 9 * fs,
                       fontWeight: "bold",
                       color: accentHex,
                       textTransform: "uppercase",
@@ -1554,7 +1563,7 @@ export default function CVPreview({ data, onBack }: Props) {
                   {p.phone && (
                     <p
                       style={{
-                        fontSize: 10,
+                        fontSize: 10 * fs,
                         marginBottom: 6,
                         color: "#374151",
                         display: "flex",
@@ -1568,7 +1577,7 @@ export default function CVPreview({ data, onBack }: Props) {
                   {p.email && (
                     <p
                       style={{
-                        fontSize: 10,
+                        fontSize: 10 * fs,
                         marginBottom: 6,
                         color: "#374151",
                         display: "flex",
@@ -1583,7 +1592,7 @@ export default function CVPreview({ data, onBack }: Props) {
                   {p.address && (
                     <p
                       style={{
-                        fontSize: 10,
+                        fontSize: 10 * fs,
                         marginBottom: 6,
                         color: "#374151",
                         display: "flex",
@@ -1597,7 +1606,7 @@ export default function CVPreview({ data, onBack }: Props) {
                   {p.linkedin && (
                     <p
                       style={{
-                        fontSize: 10,
+                        fontSize: 10 * fs,
                         marginBottom: 6,
                         color: "#374151",
                         display: "flex",
@@ -1612,7 +1621,7 @@ export default function CVPreview({ data, onBack }: Props) {
                   {p.telegram && (
                     <p
                       style={{
-                        fontSize: 10,
+                        fontSize: 10 * fs,
                         marginBottom: 6,
                         color: "#374151",
                         display: "flex",
@@ -1628,7 +1637,7 @@ export default function CVPreview({ data, onBack }: Props) {
                   <div style={{ marginBottom: 16 }}>
                     <p
                       style={{
-                        fontSize: 9,
+                        fontSize: 9 * fs,
                         fontWeight: "bold",
                         color: accentHex,
                         textTransform: "uppercase",
@@ -1642,7 +1651,7 @@ export default function CVPreview({ data, onBack }: Props) {
                       <div key={s.id} style={{ marginBottom: 7 }}>
                         <p
                           style={{
-                            fontSize: 9,
+                            fontSize: 9 * fs,
                             marginBottom: 2,
                             color: "#374151",
                           }}
@@ -1658,7 +1667,7 @@ export default function CVPreview({ data, onBack }: Props) {
                   <div>
                     <p
                       style={{
-                        fontSize: 9,
+                        fontSize: 9 * fs,
                         fontWeight: "bold",
                         color: accentHex,
                         textTransform: "uppercase",
@@ -1672,7 +1681,7 @@ export default function CVPreview({ data, onBack }: Props) {
                       <p
                         key={l.id}
                         style={{
-                          fontSize: 9,
+                          fontSize: 9 * fs,
                           color: "#374151",
                           marginBottom: 5,
                         }}
@@ -1710,7 +1719,7 @@ export default function CVPreview({ data, onBack }: Props) {
                       style={{
                         width: 70,
                         height: 70,
-                        borderRadius: 8,
+                        borderRadius: "50%",
                         objectFit: "cover",
                         flexShrink: 0,
                       }}
@@ -1719,7 +1728,7 @@ export default function CVPreview({ data, onBack }: Props) {
                   <div>
                     <h1
                       style={{
-                        fontSize: 20,
+                        fontSize: 20 * fs,
                         fontWeight: "bold",
                         color: headerColor,
                         marginBottom: 5,
@@ -1772,7 +1781,7 @@ export default function CVPreview({ data, onBack }: Props) {
                   <div style={{ flex: 1 }}>
                     <h1
                       style={{
-                        fontSize: 21,
+                        fontSize: 21 * fs,
                         fontWeight: "bold",
                         color:
                           headerColor === "accent" ? accentHex : headerColor,
@@ -1813,7 +1822,7 @@ export default function CVPreview({ data, onBack }: Props) {
                 )}
                 <h1
                   style={{
-                    fontSize: 22,
+                    fontSize: 22 * fs,
                     fontWeight: "bold",
                     color: "#1e293b",
                     marginBottom: 6,
@@ -1827,16 +1836,46 @@ export default function CVPreview({ data, onBack }: Props) {
                     justifyContent: "center",
                     flexWrap: "wrap",
                     gap: 14,
-                    fontSize: 9.5,
+                    fontSize: 9.5 * fs,
                     color: "#64748b",
                     marginBottom: 10,
                   }}
                 >
-               {p.phone    && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Icon d={ICONS.phone}    color="#64748b" /> {p.phone}</span>}
-                  {p.email    && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Icon d={ICONS.email}    color="#64748b" /> {p.email}</span>}
-                  {p.address  && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Icon d={ICONS.location} color="#64748b" /> {p.address}</span>}
-                  {p.linkedin && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Icon d={ICONS.linkedin} color="#64748b" /> {p.linkedin}</span>}
-                  {p.telegram && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Icon d={ICONS.telegram} color="#64748b" /> {p.telegram}</span>}
+                  {p.phone && (
+                    <span
+                      style={{ display: "flex", alignItems: "center", gap: 4 }}
+                    >
+                      <Icon d={ICONS.phone} color="#64748b" /> {p.phone}
+                    </span>
+                  )}
+                  {p.email && (
+                    <span
+                      style={{ display: "flex", alignItems: "center", gap: 4 }}
+                    >
+                      <Icon d={ICONS.email} color="#64748b" /> {p.email}
+                    </span>
+                  )}
+                  {p.address && (
+                    <span
+                      style={{ display: "flex", alignItems: "center", gap: 4 }}
+                    >
+                      <Icon d={ICONS.location} color="#64748b" /> {p.address}
+                    </span>
+                  )}
+                  {p.linkedin && (
+                    <span
+                      style={{ display: "flex", alignItems: "center", gap: 4 }}
+                    >
+                      <Icon d={ICONS.linkedin} color="#64748b" /> {p.linkedin}
+                    </span>
+                  )}
+                  {p.telegram && (
+                    <span
+                      style={{ display: "flex", alignItems: "center", gap: 4 }}
+                    >
+                      <Icon d={ICONS.telegram} color="#64748b" /> {p.telegram}
+                    </span>
+                  )}
                 </div>
                 <div
                   style={{

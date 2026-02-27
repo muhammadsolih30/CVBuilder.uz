@@ -1175,6 +1175,7 @@ export default function StepTemplate({ data, onChange }: Props) {
   const safeTemplate = (data?.template as string) || "t001";
   const safeColor = data?.accentColor || "blue";
   const safeFont = data?.font || "Inter";
+  const safeFontSize = data?.fontSize ?? 15;
 
   const accentHex = COLORS.find((c) => c.key === safeColor)?.hex || "#2563eb";
 
@@ -1292,6 +1293,72 @@ export default function StepTemplate({ data, onChange }: Props) {
       </div>
 
       {/* ═══════════════════════════════════
+          2b. YOZUV KATTALIGI
+      ════════════════════════════════════ */}
+      <div className="rounded-2xl border border-border bg-card p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Type className="w-4 h-4" style={{ color: accentHex }} />
+            <span className="text-sm font-semibold">Yozuv kattaligi</span>
+          </div>
+          <span
+            className="text-sm font-bold px-2.5 py-0.5 rounded-full"
+            style={{ backgroundColor: accentHex + "18", color: accentHex }}
+          >
+            {safeFontSize}px
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground w-7 text-center">
+            12
+          </span>
+          <div className="flex-1 relative">
+            <input
+              type="range"
+              min={12}
+              max={32}
+              step={1}
+              value={safeFontSize}
+              onChange={(e) => onChange("fontSize", e.target.value)}
+              className="w-full h-2 rounded-full appearance-none cursor-pointer"
+              style={{
+                background: `linear-gradient(to right, ${accentHex} 0%, ${accentHex} ${((safeFontSize - 12) / 20) * 100}%, #e2e8f0 ${((safeFontSize - 12) / 20) * 100}%, #e2e8f0 100%)`,
+                accentColor: accentHex,
+              }}
+            />
+          </div>
+          <span className="text-xs text-muted-foreground w-7 text-center">
+            32
+          </span>
+        </div>
+        <div className="flex justify-between mt-2 px-8">
+          <span className="text-[10px] text-muted-foreground">Kichik</span>
+          <span className="text-[10px] text-muted-foreground">
+            Default (15px)
+          </span>
+          <span className="text-[10px] text-muted-foreground">Katta</span>
+        </div>
+        {/* Namuna ko'rinishi */}
+        <div
+          className="mt-3 p-3 rounded-xl border border-border bg-muted/30"
+          style={{ fontFamily: `'${safeFont}', sans-serif` }}
+        >
+          <p
+            className="font-bold text-foreground leading-snug"
+            style={{ fontSize: safeFontSize }}
+          >
+            Muhammadsolih Abduvosiyev
+          </p>
+          <p
+            className="text-muted-foreground mt-0.5"
+            style={{ fontSize: safeFontSize * 0.75 }}
+          >
+            Frontend dasturchi · Samarqand viloyati
+          </p>
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════
           3. SHABLONLAR
       ════════════════════════════════════ */}
       <div>
@@ -1405,7 +1472,7 @@ export default function StepTemplate({ data, onChange }: Props) {
           </p>
           <p className="text-xs text-muted-foreground mt-0.5">
             {COLORS.find((c) => c.key === safeColor)?.label} rang · {safeFont}{" "}
-            shrift
+            shrift · {safeFontSize}px
           </p>
         </div>
         <div
