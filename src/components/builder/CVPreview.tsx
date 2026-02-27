@@ -2,7 +2,6 @@ import React, { useRef, useState, useLayoutEffect } from "react";
 import { CVData } from "@/types/cv";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Download, Eye } from "lucide-react";
-import html2pdf from "html2pdf.js";
 
 interface Props {
   data: CVData;
@@ -275,37 +274,51 @@ function resolveConfig(templateKey: string, accentHex: string): TplConfig {
 
 // ─── Mobile scale wrapper ──────────────────────────────────
 function CvScaleWrapper({ children }: { children: React.ReactNode }) {
-  const ref = useRef<HTMLDivElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
 
   useLayoutEffect(() => {
     function update() {
       const vw = window.innerWidth;
       const available = vw - 16;
-      setScale(available < 794 ? available / 794 : 1);
+      const s = available < 794 ? available / 794 : 1;
+      setScale(s);
     }
     update();
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
   }, []);
 
+  // Scaled CV haqiqiy balandligi: 297mm * scale
+  // Shu qiymatni wrapper ga beramiz — scroll to'g'ri ishlaydi
+  const CV_HEIGHT_MM = 297;
+  const CV_HEIGHT_PX = CV_HEIGHT_MM * 3.7795; // 1mm = 3.7795px
+  const scaledHeight = CV_HEIGHT_PX * scale;
+
   return (
     <div
-      ref={ref}
+      ref={wrapRef}
       style={{
         width: "100%",
         display: "flex",
         justifyContent: "center",
-        paddingTop: "2rem",
-        paddingBottom:
-          scale < 1 ? `calc(${(1 - scale) * 297}mm + 2rem)` : "2rem",
-        overflow: "hidden",
+        // Wrapper balandligi — scaled CV balandligiga teng (+ oz padding)
+        minHeight: scaledHeight + 32,
+        paddingTop: 16,
+        paddingBottom: 16,
+        position: "relative",
+        overflow: "visible",
       }}
     >
       <div
+        ref={innerRef}
         style={{
+          position: "absolute",
+          top: 16,
+          left: "50%",
           transformOrigin: "top center",
-          transform: `scale(${scale})`,
+          transform: `translateX(-50%) scale(${scale})`,
         }}
       >
         {children}
@@ -334,27 +347,145 @@ export default function CVPreview({ data, onBack }: Props) {
   const handleDownload = async () => {
     if (!cvRef.current) return;
     setDownloading(true);
+
     try {
-      await html2pdf()
-        .set({
-          margin: 0,
-          filename: `${p.fullName || "CV"}.pdf`,
-          image: { type: "jpeg", quality: 0.98 },
-          html2canvas: {
-            scale: 2,
-            useCORS: true,
-            logging: false,
-            letterRendering: true,
-          },
-          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-        })
-        .from(cvRef.current)
-        .save();
+      const [html2canvas, { jsPDF }] = await Promise.all([
+        import("html2canvas").then((m) => m.default),
+        import("jspdf"),
+      ]);
+
+      const el = cvRef.current;
+      const A4_W_PX = 794;
+
+      // Barcha img src larni base64 ga aylantiramiz (CORS muammosiz)
+      const toBase64 = (imgEl: HTMLImageElement): Promise<string> =>
+        new Promise((resolve) => {
+          if (imgEl.src.startsWith("data:")) { resolve(imgEl.src); return; }
+          const c = document.createElement("canvas");
+          c.width = imgEl.naturalWidth || imgEl.width;
+          c.height = imgEl.naturalHeight || imgEl.height;
+          const ctx = c.getContext("2d");
+          const tmp = new Image();
+          tmp.crossOrigin = "anonymous";
+          tmp.onload = () => { ctx?.drawImage(tmp, 0, 0); resolve(c.toDataURL("image/png")); };
+          tmp.onerror = () => resolve(imgEl.src);
+          tmp.src = imgEl.src;
+        });
+
+      const canvas = await html2canvas(el, {
+        scale: 3,
+        useCORS: true,
+        allowTaint: false,
+        logging: false,
+        width: A4_W_PX,
+        height: el.scrollHeight,
+        windowWidth: A4_W_PX,
+        // backgroundColor: null — har bir element o'z rangini saqlaydi
+        backgroundColor: null,
+        onclone: async (_doc: Document, cloned: HTMLElement) => {
+          cloned.style.transform = "none";
+          cloned.style.position = "static";
+          cloned.style.width = A4_W_PX + "px";
+          cloned.style.minWidth = A4_W_PX + "px";
+          cloned.style.boxShadow = "none";
+
+          // Barcha elementlarga background-color ni force qilamiz
+          // html2canvas ba'zan computed style ni o'qimaydi
+          const allEls = Array.from(cloned.querySelectorAll("*")) as HTMLElement[];
+          allEls.forEach((el) => {
+            const cs = window.getComputedStyle(el);
+            const bg = cs.backgroundColor;
+            // "transparent" yoki "rgba(0, 0, 0, 0)" bo'lmagan ranglarni inline style ga yozamiz
+            if (bg && bg !== "transparent" && bg !== "rgba(0, 0, 0, 0)") {
+              el.style.backgroundColor = bg;
+            }
+            // color ni ham saqlash
+            const color = cs.color;
+            if (color) el.style.color = color;
+          });
+
+          // Har bir img ni base64 ga aylantirib, wrapper div bilan o'raymiz
+          const imgs = Array.from(cloned.querySelectorAll("img")) as HTMLImageElement[];
+          await Promise.all(
+            imgs.map(async (img) => {
+              const b64 = await toBase64(img);
+              img.src = b64;
+
+              const computed = img.getAttribute("style") || "";
+              const brMatch = computed.match(/border-radius:\s*([^;]+)/);
+              const br = brMatch ? brMatch[1].trim() : null;
+
+              if (br && br !== "0px" && br !== "0") {
+                const w = img.style.width || (img.width ? img.width + "px" : "68px");
+                const h = img.style.height || (img.height ? img.height + "px" : "68px");
+                const mw = img.style.minWidth || w;
+
+                const wrapper = document.createElement("div");
+                wrapper.style.cssText = [
+                  `width:${w}`,
+                  `height:${h}`,
+                  `min-width:${mw}`,
+                  `border-radius:${br}`,
+                  `overflow:hidden`,
+                  `flex-shrink:0`,
+                  `display:inline-flex`,
+                  `align-items:center`,
+                  `justify-content:center`,
+                ].join(";");
+
+                img.parentNode?.insertBefore(wrapper, img);
+                wrapper.appendChild(img);
+
+                img.style.borderRadius = "0";
+                img.style.width = "100%";
+                img.style.height = "100%";
+                img.style.minWidth = "unset";
+                img.style.objectFit = "cover";
+                img.style.flexShrink = "0";
+              }
+            })
+          );
+        },
+      } as Parameters<typeof html2canvas>[1]);
+
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+        compress: false,
+      });
+
+      const pageW = 210;
+      const pageH = 297;
+      const totalH = canvas.height;
+      const canvasW = canvas.width;
+      const pageHpx = Math.round((pageH / pageW) * canvasW);
+
+      let yOffset = 0;
+      let pageNum = 0;
+
+      while (yOffset < totalH) {
+        if (pageNum > 0) pdf.addPage();
+        const sliceH = Math.min(pageHpx, totalH - yOffset);
+        const tmp = document.createElement("canvas");
+        tmp.width = canvasW;
+        tmp.height = sliceH;
+        tmp.getContext("2d")?.drawImage(canvas, 0, yOffset, canvasW, sliceH, 0, 0, canvasW, sliceH);
+        const imgData = tmp.toDataURL("image/jpeg", 0.98);
+        const renderedH = (sliceH / canvasW) * pageW;
+        pdf.addImage(imgData, "JPEG", 0, 0, pageW, renderedH);
+        yOffset += sliceH;
+        pageNum++;
+      }
+
+      pdf.save(`${p.fullName || "CV"}.pdf`);
+    } catch (err) {
+      console.error("PDF xatolik:", err);
+      alert("PDF yaratishda xatolik yuz berdi.");
     } finally {
       setDownloading(false);
     }
   };
-
   // ─── ATS Score ──────────────────────────────────────────
   const score = [
     p.fullName ? 15 : 0,
@@ -414,26 +545,27 @@ export default function CVPreview({ data, onBack }: Props) {
     </div>
   );
 
-  // SVG ikonlar — PDF da to'g'ri chiqadi, emoji cho'zilmaydi
-  const Icon = ({ d, color }: { d: string; color: string }) => (
-    <svg
-      width="11"
-      height="11"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      style={{
-        display: "inline-block",
-        verticalAlign: "middle",
-        flexShrink: 0,
-      }}
-    >
-      <path d={d} />
-    </svg>
-  );
+  // SVG ikonlar — base64 data URI orqali (html2canvas bilan mos)
+  const Icon = ({ d, color }: { d: string; color: string }) => {
+    const encoded = color.startsWith("rgba") || color.startsWith("rgb")
+      ? encodeURIComponent(color)
+      : color.replace("#", "%23");
+    const svgStr = `<svg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='${encoded}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='${d}'/></svg>`;
+    const dataUri = "data:image/svg+xml;charset=utf-8," + svgStr;
+    return (
+      <img
+        src={dataUri}
+        width={11}
+        height={11}
+        style={{
+          display: "block",
+          flexShrink: 0,
+          alignSelf: "center",
+        }}
+        alt=""
+      />
+    );
+  };
   const ICONS = {
     phone:
       "M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8a19.79 19.79 0 01-3.07-8.67A2 2 0 012 .84h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.64a16 16 0 006.29 6.29l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z",
@@ -458,27 +590,27 @@ export default function CVPreview({ data, onBack }: Props) {
       }}
     >
       {p.phone && (
-        <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
           <Icon d={ICONS.phone} color={color} /> {p.phone}
         </span>
       )}
       {p.email && (
-        <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
           <Icon d={ICONS.email} color={color} /> {p.email}
         </span>
       )}
       {p.address && (
-        <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
           <Icon d={ICONS.location} color={color} /> {p.address}
         </span>
       )}
       {p.linkedin && (
-        <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
           <Icon d={ICONS.linkedin} color={color} /> {p.linkedin}
         </span>
       )}
       {p.telegram && (
-        <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
           <Icon d={ICONS.telegram} color={color} /> {p.telegram}
         </span>
       )}
@@ -590,9 +722,7 @@ export default function CVPreview({ data, onBack }: Props) {
           <p style={SH({ color: acol })}>KO'NIKMALAR</p>
           {[...skills.technical, ...skills.soft].map((s) => (
             <div key={s.id} style={{ marginBottom: 7 }}>
-              <p
-                style={{ fontSize: 10 * fs, marginBottom: 2, color: bodyText }}
-              >
+              <p style={{ fontSize: 10 * fs, marginBottom: 2, color: bodyText }}>
                 {s.name}
               </p>
               <Dots level={s.level} fg={acol} bg={dotEmpty} />
@@ -720,6 +850,8 @@ export default function CVPreview({ data, onBack }: Props) {
                       style={{
                         width: 68,
                         height: 68,
+                        minWidth: 68,
+                        minHeight: 68,
                         borderRadius: "50%",
                         objectFit: "cover",
                         flexShrink: 0,
@@ -767,6 +899,8 @@ export default function CVPreview({ data, onBack }: Props) {
                       style={{
                         width: 72,
                         height: 72,
+                        minWidth: 72,
+                        minHeight: 72,
                         borderRadius: "50%",
                         objectFit: "cover",
                         flexShrink: 0,
@@ -933,6 +1067,8 @@ export default function CVPreview({ data, onBack }: Props) {
                     style={{
                       width: 80,
                       height: 80,
+                        minWidth: 80,
+                        minHeight: 80,
                       borderRadius: "50%",
                       objectFit: "cover",
                       display: "block",
@@ -969,7 +1105,7 @@ export default function CVPreview({ data, onBack }: Props) {
                       style={{
                         fontSize: 10 * fs,
                         marginBottom: 6,
-                        display: "flex",
+                        display: "inline-flex",
                         alignItems: "center",
                         gap: 5,
                       }}
@@ -983,7 +1119,7 @@ export default function CVPreview({ data, onBack }: Props) {
                       style={{
                         fontSize: 10 * fs,
                         marginBottom: 6,
-                        display: "flex",
+                        display: "inline-flex",
                         alignItems: "center",
                         gap: 5,
                         wordBreak: "break-all",
@@ -998,7 +1134,7 @@ export default function CVPreview({ data, onBack }: Props) {
                       style={{
                         fontSize: 10 * fs,
                         marginBottom: 6,
-                        display: "flex",
+                        display: "inline-flex",
                         alignItems: "center",
                         gap: 5,
                       }}
@@ -1012,7 +1148,7 @@ export default function CVPreview({ data, onBack }: Props) {
                       style={{
                         fontSize: 10 * fs,
                         marginBottom: 6,
-                        display: "flex",
+                        display: "inline-flex",
                         alignItems: "center",
                         gap: 5,
                         wordBreak: "break-all",
@@ -1027,7 +1163,7 @@ export default function CVPreview({ data, onBack }: Props) {
                       style={{
                         fontSize: 10 * fs,
                         marginBottom: 6,
-                        display: "flex",
+                        display: "inline-flex",
                         alignItems: "center",
                         gap: 5,
                       }}
@@ -1082,11 +1218,7 @@ export default function CVPreview({ data, onBack }: Props) {
                     {languages.map((l) => (
                       <p
                         key={l.id}
-                        style={{
-                          fontSize: 8.5 * fs,
-                          marginBottom: 5,
-                          opacity: 0.9,
-                        }}
+                        style={{ fontSize: 8.5 * fs, marginBottom: 5, opacity: 0.9 }}
                       >
                         {l.name} — {l.level}
                       </p>
@@ -1156,6 +1288,8 @@ export default function CVPreview({ data, onBack }: Props) {
                       style={{
                         width: 70,
                         height: 70,
+                        minWidth: 70,
+                        minHeight: 70,
                         borderRadius: "50%",
                         objectFit: "cover",
                         flexShrink: 0,
@@ -1367,6 +1501,8 @@ export default function CVPreview({ data, onBack }: Props) {
                       style={{
                         width: 68,
                         height: 68,
+                        minWidth: 68,
+                        minHeight: 68,
                         borderRadius: "50%",
                         objectFit: "cover",
                         flexShrink: 0,
@@ -1421,6 +1557,8 @@ export default function CVPreview({ data, onBack }: Props) {
                       style={{
                         width: 66,
                         height: 66,
+                        minWidth: 66,
+                        minHeight: 66,
                         borderRadius: "50%",
                         objectFit: "cover",
                         flexShrink: 0,
@@ -1480,6 +1618,8 @@ export default function CVPreview({ data, onBack }: Props) {
                       style={{
                         width: 68,
                         height: 68,
+                        minWidth: 68,
+                        minHeight: 68,
                         borderRadius: "50%",
                         objectFit: "cover",
                         flexShrink: 0,
@@ -1528,6 +1668,8 @@ export default function CVPreview({ data, onBack }: Props) {
                       style={{
                         width: 68,
                         height: 68,
+                        minWidth: 68,
+                        minHeight: 68,
                         borderRadius: "50%",
                         objectFit: "cover",
                         marginBottom: 10,
@@ -1607,7 +1749,7 @@ export default function CVPreview({ data, onBack }: Props) {
                         fontSize: 10 * fs,
                         marginBottom: 6,
                         color: "#374151",
-                        display: "flex",
+                        display: "inline-flex",
                         alignItems: "center",
                         gap: 5,
                       }}
@@ -1621,7 +1763,7 @@ export default function CVPreview({ data, onBack }: Props) {
                         fontSize: 10 * fs,
                         marginBottom: 6,
                         color: "#374151",
-                        display: "flex",
+                        display: "inline-flex",
                         alignItems: "center",
                         gap: 5,
                         wordBreak: "break-all",
@@ -1636,7 +1778,7 @@ export default function CVPreview({ data, onBack }: Props) {
                         fontSize: 10 * fs,
                         marginBottom: 6,
                         color: "#374151",
-                        display: "flex",
+                        display: "inline-flex",
                         alignItems: "center",
                         gap: 5,
                       }}
@@ -1650,7 +1792,7 @@ export default function CVPreview({ data, onBack }: Props) {
                         fontSize: 10 * fs,
                         marginBottom: 6,
                         color: "#374151",
-                        display: "flex",
+                        display: "inline-flex",
                         alignItems: "center",
                         gap: 5,
                         wordBreak: "break-all",
@@ -1665,7 +1807,7 @@ export default function CVPreview({ data, onBack }: Props) {
                         fontSize: 10 * fs,
                         marginBottom: 6,
                         color: "#374151",
-                        display: "flex",
+                        display: "inline-flex",
                         alignItems: "center",
                         gap: 5,
                       }}
@@ -1760,6 +1902,8 @@ export default function CVPreview({ data, onBack }: Props) {
                       style={{
                         width: 70,
                         height: 70,
+                        minWidth: 70,
+                        minHeight: 70,
                         borderRadius: "50%",
                         objectFit: "cover",
                         flexShrink: 0,
@@ -1813,6 +1957,8 @@ export default function CVPreview({ data, onBack }: Props) {
                       style={{
                         width: 68,
                         height: 68,
+                        minWidth: 68,
+                        minHeight: 68,
                         borderRadius: "50%",
                         objectFit: "cover",
                         flexShrink: 0,
@@ -1853,6 +1999,8 @@ export default function CVPreview({ data, onBack }: Props) {
                     style={{
                       width: 80,
                       height: 80,
+                        minWidth: 80,
+                        minHeight: 80,
                       borderRadius: "50%",
                       objectFit: "cover",
                       display: "inline-block",
@@ -1882,41 +2030,11 @@ export default function CVPreview({ data, onBack }: Props) {
                     marginBottom: 10,
                   }}
                 >
-                  {p.phone && (
-                    <span
-                      style={{ display: "flex", alignItems: "center", gap: 4 }}
-                    >
-                      <Icon d={ICONS.phone} color="#64748b" /> {p.phone}
-                    </span>
-                  )}
-                  {p.email && (
-                    <span
-                      style={{ display: "flex", alignItems: "center", gap: 4 }}
-                    >
-                      <Icon d={ICONS.email} color="#64748b" /> {p.email}
-                    </span>
-                  )}
-                  {p.address && (
-                    <span
-                      style={{ display: "flex", alignItems: "center", gap: 4 }}
-                    >
-                      <Icon d={ICONS.location} color="#64748b" /> {p.address}
-                    </span>
-                  )}
-                  {p.linkedin && (
-                    <span
-                      style={{ display: "flex", alignItems: "center", gap: 4 }}
-                    >
-                      <Icon d={ICONS.linkedin} color="#64748b" /> {p.linkedin}
-                    </span>
-                  )}
-                  {p.telegram && (
-                    <span
-                      style={{ display: "flex", alignItems: "center", gap: 4 }}
-                    >
-                      <Icon d={ICONS.telegram} color="#64748b" /> {p.telegram}
-                    </span>
-                  )}
+               {p.phone    && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Icon d={ICONS.phone}    color="#64748b" /> {p.phone}</span>}
+                  {p.email    && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Icon d={ICONS.email}    color="#64748b" /> {p.email}</span>}
+                  {p.address  && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Icon d={ICONS.location} color="#64748b" /> {p.address}</span>}
+                  {p.linkedin && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Icon d={ICONS.linkedin} color="#64748b" /> {p.linkedin}</span>}
+                  {p.telegram && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Icon d={ICONS.telegram} color="#64748b" /> {p.telegram}</span>}
                 </div>
                 <div
                   style={{

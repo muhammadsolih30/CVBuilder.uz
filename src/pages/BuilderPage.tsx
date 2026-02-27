@@ -29,10 +29,16 @@ export default function BuilderPage() {
 
   const progress = ((step + 1) / STEPS.length) * 100;
 
+  // Har qanday step o'zgarishda ekran tepasiga qaytadi
+  const goToStep = (n: number) => {
+    setStep(n);
+    window.scrollTo({ top: 0, behavior: "instant" });
+  };
+
   const handleReset = () => {
     if (window.confirm("Barcha ma'lumotlarni o'chirmoqchimisiz?")) {
       resetData();
-      setStep(0);
+      goToStep(0);
     }
   };
 
@@ -78,7 +84,10 @@ export default function BuilderPage() {
           <StepTemplate
             data={cvData}
             onChange={(field, value) =>
-              setCVData((p) => ({ ...p, [field]: value }))
+              setCVData((p) => ({
+                ...p,
+                [field]: field === "fontSize" ? Number(value) : value,
+              }))
             }
           />
         );
@@ -88,7 +97,15 @@ export default function BuilderPage() {
   };
 
   if (showPreview) {
-    return <CVPreview data={cvData} onBack={() => setShowPreview(false)} />;
+    return (
+      <CVPreview
+        data={cvData}
+        onBack={() => {
+          setShowPreview(false);
+          window.scrollTo({ top: 0, behavior: "instant" });
+        }}
+      />
+    );
   }
 
   return (
@@ -147,7 +164,7 @@ export default function BuilderPage() {
           {STEPS.map((s, i) => (
             <button
               key={s.key}
-              onClick={() => setStep(i)}
+              onClick={() => goToStep(i)}
               className={`flex-1 px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                 i === step
                   ? "border-primary text-primary"
@@ -187,7 +204,7 @@ export default function BuilderPage() {
         <div className="container-narrow flex items-center justify-between px-4 sm:px-6 py-3">
           <Button
             variant="ghost"
-            onClick={() => setStep((s) => Math.max(0, s - 1))}
+            onClick={() => goToStep(Math.max(0, step - 1))}
             disabled={step === 0}
           >
             Ortga
@@ -196,11 +213,14 @@ export default function BuilderPage() {
             {step + 1}/{STEPS.length}
           </span>
           {step < STEPS.length - 1 ? (
-            <Button onClick={() => setStep((s) => s + 1)}>Keyingisi</Button>
+            <Button onClick={() => goToStep(step + 1)}>Keyingisi</Button>
           ) : (
             <Button
               className="gradient-primary text-primary-foreground"
-              onClick={() => setShowPreview(true)}
+              onClick={() => {
+                setShowPreview(true);
+                window.scrollTo({ top: 0, behavior: "instant" });
+              }}
             >
               CV ni ko'rish
             </Button>
