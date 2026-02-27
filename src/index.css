@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700;800&family=Roboto:wght@300;400;500;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -8,40 +8,28 @@
   :root {
     --background: 210 20% 98%;
     --foreground: 220 25% 10%;
-
     --card: 0 0% 100%;
     --card-foreground: 220 25% 10%;
-
     --popover: 0 0% 100%;
     --popover-foreground: 220 25% 10%;
-
     --primary: 220 70% 50%;
     --primary-foreground: 0 0% 100%;
-
     --secondary: 210 20% 96%;
     --secondary-foreground: 220 25% 20%;
-
     --muted: 210 15% 94%;
     --muted-foreground: 215 15% 50%;
-
     --accent: 165 60% 45%;
     --accent-foreground: 0 0% 100%;
-
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-
     --border: 214 20% 90%;
     --input: 214 20% 90%;
     --ring: 220 70% 50%;
-
     --radius: 0.75rem;
-
     --success: 150 60% 45%;
     --success-foreground: 0 0% 100%;
-
     --warning: 38 92% 55%;
     --warning-foreground: 0 0% 100%;
-
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 240 5.9% 10%;
@@ -50,7 +38,6 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
-
     --shadow-sm: 0 1px 2px 0 hsl(220 25% 10% / 0.05);
     --shadow-md: 0 4px 16px -2px hsl(220 25% 10% / 0.08);
     --shadow-lg: 0 12px 32px -4px hsl(220 25% 10% / 0.1);
@@ -98,7 +85,16 @@
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  #root {
+    min-height: 100vh;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-semibold tracking-tight;
   }
 }
@@ -131,6 +127,15 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+  }
+
+  /* FIX: text-warning va text-success classlari yo'q edi */
+  .text-warning {
+    color: hsl(var(--warning));
+  }
+
+  .text-success {
+    color: hsl(var(--success));
   }
 
   .section-padding {
