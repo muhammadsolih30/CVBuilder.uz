@@ -7,7 +7,24 @@ export function useCVData() {
   const [cvData, setCVData] = useState<CVData>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? { ...defaultCVData, ...JSON.parse(saved) } : defaultCVData;
+      if (!saved) return defaultCVData;
+
+      const parsed = JSON.parse(saved);
+
+      // BUG FIX: shallow merge skills ni to'g'ri qayta tiklamaydi
+      // Deep merge qilamiz
+      return {
+        ...defaultCVData,
+        ...parsed,
+        personalInfo: {
+          ...defaultCVData.personalInfo,
+          ...(parsed.personalInfo || {}),
+        },
+        skills: {
+          technical: parsed.skills?.technical ?? defaultCVData.skills.technical,
+          soft: parsed.skills?.soft ?? defaultCVData.skills.soft,
+        },
+      };
     } catch {
       return defaultCVData;
     }
