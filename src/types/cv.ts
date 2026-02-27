@@ -53,11 +53,8 @@ export interface Language {
   level: 'Boshlang\'ich' | 'O\'rta' | 'Yaxshi' | 'Mukammal' | 'Ona tili';
 }
 
-// 100 ta shablon turi
 export type TemplateType =
-  // Eski 4 ta (orqaga muvofiqligi uchun saqlab qolindi)
   | 'minimal' | 'modern' | 'dark' | 'classic'
-  // Yangi 100 ta
   | 't001' | 't002' | 't003' | 't004' | 't005'
   | 't006' | 't007' | 't008' | 't009' | 't010'
   | 't011' | 't012' | 't013' | 't014' | 't015'
@@ -79,7 +76,13 @@ export type TemplateType =
   | 't091' | 't092' | 't093' | 't094' | 't095'
   | 't096' | 't097' | 't098' | 't099' | 't100';
 
-export type AccentColor = 'blue' | 'green' | 'black';
+// ✅ TUZATILDI: faqat 3 ta emas, 24 ta rang
+export type AccentColor =
+  | 'blue' | 'sky' | 'cyan' | 'teal' | 'green' | 'emerald'
+  | 'lime' | 'yellow' | 'amber' | 'orange' | 'red' | 'rose'
+  | 'pink' | 'fuchsia' | 'purple' | 'violet' | 'indigo'
+  | 'slate' | 'gray' | 'zinc' | 'black' | 'brown' | 'gold' | 'navy';
+
 export type FontType = 'Inter' | 'Poppins' | 'Roboto';
 
 export const defaultCVData: CVData = {
@@ -95,10 +98,7 @@ export const defaultCVData: CVData = {
   },
   workExperience: [],
   education: [],
-  skills: {
-    technical: [],
-    soft: [],
-  },
+  skills: { technical: [], soft: [] },
   languages: [],
   template: 't001',
   accentColor: 'blue',
