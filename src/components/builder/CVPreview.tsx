@@ -349,105 +349,128 @@ export default function CVPreview({ data, onBack }: Props) {
     setDownloading(true);
 
     try {
-      const [html2canvas, { jsPDF }] = await Promise.all([
-        import("html2canvas").then((m) => m.default),
-        import("jspdf"),
-      ]);
+      const { default: html2canvas } = await import("html2canvas");
+      const { jsPDF } = await import("jspdf");
 
       const el = cvRef.current;
-      const A4_W_PX = 794;
+      const A4W = 794;
 
-      // Barcha img src larni base64 ga aylantiramiz (CORS muammosiz)
-      const toBase64 = (imgEl: HTMLImageElement): Promise<string> =>
-        new Promise((resolve) => {
-          if (imgEl.src.startsWith("data:")) { resolve(imgEl.src); return; }
-          const c = document.createElement("canvas");
-          c.width = imgEl.naturalWidth || imgEl.width;
-          c.height = imgEl.naturalHeight || imgEl.height;
-          const ctx = c.getContext("2d");
-          const tmp = new Image();
-          tmp.crossOrigin = "anonymous";
-          tmp.onload = () => { ctx?.drawImage(tmp, 0, 0); resolve(c.toDataURL("image/png")); };
-          tmp.onerror = () => resolve(imgEl.src);
-          tmp.src = imgEl.src;
-        });
+      // ── 1. Ko'rinmas klon yaratamiz ──────────────────────
+      const host = document.createElement("div");
+      host.style.cssText =
+        "position:fixed;top:-99999px;left:-99999px;width:794px;overflow:visible;z-index:-1;";
+      document.body.appendChild(host);
 
-      const canvas = await html2canvas(el, {
+      const clone = el.cloneNode(true) as HTMLElement;
+      clone.style.cssText =
+        "width:794px;min-width:794px;transform:none;position:static;box-shadow:none;";
+      host.appendChild(clone);
+
+      // ── 2. Barcha computed stillarni inline ga ko'chiramiz ─
+      const srcAll = el.querySelectorAll("*");
+      const clnAll = clone.querySelectorAll("*");
+
+      srcAll.forEach((src, i) => {
+        const dst = clnAll[i] as HTMLElement | undefined;
+        if (!dst) return;
+        const cs = getComputedStyle(src);
+
+        // Fon rangi
+        const bg = cs.backgroundColor;
+        if (bg && bg !== "rgba(0, 0, 0, 0)") dst.style.backgroundColor = bg;
+
+        // Matn rangi
+        dst.style.color = cs.color;
+
+        // Border
+        if (cs.borderTopWidth !== "0px") {
+          dst.style.borderTop = `${cs.borderTopWidth} ${cs.borderTopStyle} ${cs.borderTopColor}`;
+        }
+        if (cs.borderBottomWidth !== "0px") {
+          dst.style.borderBottom = `${cs.borderBottomWidth} ${cs.borderBottomStyle} ${cs.borderBottomColor}`;
+        }
+        if (cs.borderLeftWidth !== "0px") {
+          dst.style.borderLeft = `${cs.borderLeftWidth} ${cs.borderLeftStyle} ${cs.borderLeftColor}`;
+        }
+        if (cs.borderRightWidth !== "0px") {
+          dst.style.borderRight = `${cs.borderRightWidth} ${cs.borderRightStyle} ${cs.borderRightColor}`;
+        }
+
+        // Border radius
+        if (cs.borderRadius && cs.borderRadius !== "0px") {
+          dst.style.borderRadius = cs.borderRadius;
+          dst.style.overflow = "hidden";
+        }
+      });
+
+      // ── 3. Rasmlarni base64 ga o'tkazib, clip qilamiz ────
+      const srcImgs = Array.from(
+        el.querySelectorAll("img"),
+      ) as HTMLImageElement[];
+      const clnImgs = Array.from(
+        clone.querySelectorAll("img"),
+      ) as HTMLImageElement[];
+
+      await Promise.all(
+        srcImgs.map(async (srcImg, i) => {
+          const clnImg = clnImgs[i];
+          if (!clnImg) return;
+
+          // SVG ikonlar — o'zgartirmasdan qoldiramiz
+          if (srcImg.src.startsWith("data:image/svg")) return;
+
+          // Rasmni canvas orqali base64 ga
+          await new Promise<void>((res) => {
+            const tmp = new Image();
+            tmp.crossOrigin = "anonymous";
+            tmp.onload = () => {
+              const c = document.createElement("canvas");
+              c.width = tmp.naturalWidth || srcImg.naturalWidth || 200;
+              c.height = tmp.naturalHeight || srcImg.naturalHeight || 200;
+              c.getContext("2d")?.drawImage(tmp, 0, 0);
+              clnImg.src = c.toDataURL("image/png");
+              res();
+            };
+            tmp.onerror = () => res();
+            tmp.src = srcImg.src;
+          });
+
+          // Dumaloq rasm uchun overflow:hidden wrapper
+          const cs = getComputedStyle(srcImg);
+          const br = cs.borderRadius;
+          if (br && br !== "0px") {
+            const w = srcImg.offsetWidth || 68;
+            const h = srcImg.offsetHeight || 68;
+
+            const wrap = document.createElement("div");
+            wrap.style.cssText = `
+              width:${w}px;height:${h}px;min-width:${w}px;
+              border-radius:${br};overflow:hidden;
+              flex-shrink:0;display:inline-flex;
+            `;
+            clnImg.parentNode?.insertBefore(wrap, clnImg);
+            wrap.appendChild(clnImg);
+            clnImg.style.cssText =
+              "width:100%;height:100%;object-fit:cover;border-radius:0;";
+          }
+        }),
+      );
+
+      // ── 4. html2canvas bilan render ──────────────────────
+      const canvas = await html2canvas(clone, {
         scale: 3,
         useCORS: true,
         allowTaint: false,
         logging: false,
-        width: A4_W_PX,
-        height: el.scrollHeight,
-        windowWidth: A4_W_PX,
-        // backgroundColor: null — har bir element o'z rangini saqlaydi
+        width: A4W,
+        height: clone.scrollHeight,
+        windowWidth: A4W,
         backgroundColor: null,
-        onclone: async (_doc: Document, cloned: HTMLElement) => {
-          cloned.style.transform = "none";
-          cloned.style.position = "static";
-          cloned.style.width = A4_W_PX + "px";
-          cloned.style.minWidth = A4_W_PX + "px";
-          cloned.style.boxShadow = "none";
+      });
 
-          // Barcha elementlarga background-color ni force qilamiz
-          // html2canvas ba'zan computed style ni o'qimaydi
-          const allEls = Array.from(cloned.querySelectorAll("*")) as HTMLElement[];
-          allEls.forEach((el) => {
-            const cs = window.getComputedStyle(el);
-            const bg = cs.backgroundColor;
-            // "transparent" yoki "rgba(0, 0, 0, 0)" bo'lmagan ranglarni inline style ga yozamiz
-            if (bg && bg !== "transparent" && bg !== "rgba(0, 0, 0, 0)") {
-              el.style.backgroundColor = bg;
-            }
-            // color ni ham saqlash
-            const color = cs.color;
-            if (color) el.style.color = color;
-          });
+      document.body.removeChild(host);
 
-          // Har bir img ni base64 ga aylantirib, wrapper div bilan o'raymiz
-          const imgs = Array.from(cloned.querySelectorAll("img")) as HTMLImageElement[];
-          await Promise.all(
-            imgs.map(async (img) => {
-              const b64 = await toBase64(img);
-              img.src = b64;
-
-              const computed = img.getAttribute("style") || "";
-              const brMatch = computed.match(/border-radius:\s*([^;]+)/);
-              const br = brMatch ? brMatch[1].trim() : null;
-
-              if (br && br !== "0px" && br !== "0") {
-                const w = img.style.width || (img.width ? img.width + "px" : "68px");
-                const h = img.style.height || (img.height ? img.height + "px" : "68px");
-                const mw = img.style.minWidth || w;
-
-                const wrapper = document.createElement("div");
-                wrapper.style.cssText = [
-                  `width:${w}`,
-                  `height:${h}`,
-                  `min-width:${mw}`,
-                  `border-radius:${br}`,
-                  `overflow:hidden`,
-                  `flex-shrink:0`,
-                  `display:inline-flex`,
-                  `align-items:center`,
-                  `justify-content:center`,
-                ].join(";");
-
-                img.parentNode?.insertBefore(wrapper, img);
-                wrapper.appendChild(img);
-
-                img.style.borderRadius = "0";
-                img.style.width = "100%";
-                img.style.height = "100%";
-                img.style.minWidth = "unset";
-                img.style.objectFit = "cover";
-                img.style.flexShrink = "0";
-              }
-            })
-          );
-        },
-      } as Parameters<typeof html2canvas>[1]);
-
+      // ── 5. PDF ga yozamiz ─────────────────────────────────
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "mm",
@@ -455,32 +478,38 @@ export default function CVPreview({ data, onBack }: Props) {
         compress: false,
       });
 
-      const pageW = 210;
-      const pageH = 297;
-      const totalH = canvas.height;
-      const canvasW = canvas.width;
-      const pageHpx = Math.round((pageH / pageW) * canvasW);
+      const PW = 210;
+      const PH = 297;
+      const cW = canvas.width;
+      const cH = canvas.height;
+      const pageHpx = Math.round((PH / PW) * cW);
 
-      let yOffset = 0;
-      let pageNum = 0;
-
-      while (yOffset < totalH) {
-        if (pageNum > 0) pdf.addPage();
-        const sliceH = Math.min(pageHpx, totalH - yOffset);
+      let y = 0;
+      let page = 0;
+      while (y < cH) {
+        if (page > 0) pdf.addPage();
+        const slice = Math.min(pageHpx, cH - y);
         const tmp = document.createElement("canvas");
-        tmp.width = canvasW;
-        tmp.height = sliceH;
-        tmp.getContext("2d")?.drawImage(canvas, 0, yOffset, canvasW, sliceH, 0, 0, canvasW, sliceH);
-        const imgData = tmp.toDataURL("image/jpeg", 0.98);
-        const renderedH = (sliceH / canvasW) * pageW;
-        pdf.addImage(imgData, "JPEG", 0, 0, pageW, renderedH);
-        yOffset += sliceH;
-        pageNum++;
+        tmp.width = cW;
+        tmp.height = slice;
+        tmp
+          .getContext("2d")
+          ?.drawImage(canvas, 0, y, cW, slice, 0, 0, cW, slice);
+        pdf.addImage(
+          tmp.toDataURL("image/jpeg", 1.0),
+          "JPEG",
+          0,
+          0,
+          PW,
+          (slice / cW) * PW,
+        );
+        y += slice;
+        page++;
       }
 
       pdf.save(`${p.fullName || "CV"}.pdf`);
-    } catch (err) {
-      console.error("PDF xatolik:", err);
+    } catch (e) {
+      console.error(e);
       alert("PDF yaratishda xatolik yuz berdi.");
     } finally {
       setDownloading(false);
@@ -547,9 +576,10 @@ export default function CVPreview({ data, onBack }: Props) {
 
   // SVG ikonlar — base64 data URI orqali (html2canvas bilan mos)
   const Icon = ({ d, color }: { d: string; color: string }) => {
-    const encoded = color.startsWith("rgba") || color.startsWith("rgb")
-      ? encodeURIComponent(color)
-      : color.replace("#", "%23");
+    const encoded =
+      color.startsWith("rgba") || color.startsWith("rgb")
+        ? encodeURIComponent(color)
+        : color.replace("#", "%23");
     const svgStr = `<svg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='${encoded}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='${d}'/></svg>`;
     const dataUri = "data:image/svg+xml;charset=utf-8," + svgStr;
     return (
@@ -722,7 +752,9 @@ export default function CVPreview({ data, onBack }: Props) {
           <p style={SH({ color: acol })}>KO'NIKMALAR</p>
           {[...skills.technical, ...skills.soft].map((s) => (
             <div key={s.id} style={{ marginBottom: 7 }}>
-              <p style={{ fontSize: 10 * fs, marginBottom: 2, color: bodyText }}>
+              <p
+                style={{ fontSize: 10 * fs, marginBottom: 2, color: bodyText }}
+              >
                 {s.name}
               </p>
               <Dots level={s.level} fg={acol} bg={dotEmpty} />
@@ -1067,8 +1099,8 @@ export default function CVPreview({ data, onBack }: Props) {
                     style={{
                       width: 80,
                       height: 80,
-                        minWidth: 80,
-                        minHeight: 80,
+                      minWidth: 80,
+                      minHeight: 80,
                       borderRadius: "50%",
                       objectFit: "cover",
                       display: "block",
@@ -1218,7 +1250,11 @@ export default function CVPreview({ data, onBack }: Props) {
                     {languages.map((l) => (
                       <p
                         key={l.id}
-                        style={{ fontSize: 8.5 * fs, marginBottom: 5, opacity: 0.9 }}
+                        style={{
+                          fontSize: 8.5 * fs,
+                          marginBottom: 5,
+                          opacity: 0.9,
+                        }}
                       >
                         {l.name} — {l.level}
                       </p>
@@ -1999,8 +2035,8 @@ export default function CVPreview({ data, onBack }: Props) {
                     style={{
                       width: 80,
                       height: 80,
-                        minWidth: 80,
-                        minHeight: 80,
+                      minWidth: 80,
+                      minHeight: 80,
                       borderRadius: "50%",
                       objectFit: "cover",
                       display: "inline-block",
@@ -2030,11 +2066,61 @@ export default function CVPreview({ data, onBack }: Props) {
                     marginBottom: 10,
                   }}
                 >
-               {p.phone    && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Icon d={ICONS.phone}    color="#64748b" /> {p.phone}</span>}
-                  {p.email    && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Icon d={ICONS.email}    color="#64748b" /> {p.email}</span>}
-                  {p.address  && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Icon d={ICONS.location} color="#64748b" /> {p.address}</span>}
-                  {p.linkedin && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Icon d={ICONS.linkedin} color="#64748b" /> {p.linkedin}</span>}
-                  {p.telegram && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Icon d={ICONS.telegram} color="#64748b" /> {p.telegram}</span>}
+                  {p.phone && (
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
+                      <Icon d={ICONS.phone} color="#64748b" /> {p.phone}
+                    </span>
+                  )}
+                  {p.email && (
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
+                      <Icon d={ICONS.email} color="#64748b" /> {p.email}
+                    </span>
+                  )}
+                  {p.address && (
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
+                      <Icon d={ICONS.location} color="#64748b" /> {p.address}
+                    </span>
+                  )}
+                  {p.linkedin && (
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
+                      <Icon d={ICONS.linkedin} color="#64748b" /> {p.linkedin}
+                    </span>
+                  )}
+                  {p.telegram && (
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
+                      <Icon d={ICONS.telegram} color="#64748b" /> {p.telegram}
+                    </span>
+                  )}
                 </div>
                 <div
                   style={{
@@ -2053,3 +2139,6 @@ export default function CVPreview({ data, onBack }: Props) {
     </div>
   );
 }
+
+
+
