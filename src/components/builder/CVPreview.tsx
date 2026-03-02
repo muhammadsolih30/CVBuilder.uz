@@ -375,9 +375,11 @@ export default function CVPreview({ data, onBack }: Props) {
         if (!dst) return;
         const cs = getComputedStyle(src);
 
-        // Fon rangi
+        // Fon rangi — faqat haqiqiy rang bo'lsa ko'chiramiz (transparent emas)
         const bg = cs.backgroundColor;
-        if (bg && bg !== "rgba(0, 0, 0, 0)") dst.style.backgroundColor = bg;
+        if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") {
+          dst.style.backgroundColor = bg;
+        }
 
         // Matn rangi
         dst.style.color = cs.color;
@@ -457,6 +459,9 @@ export default function CVPreview({ data, onBack }: Props) {
       );
 
       // ── 4. html2canvas bilan render ──────────────────────
+      // pageBg ni inline stil sifatida clone ga ham o'rnatamiz
+      clone.style.backgroundColor = pageBg;
+
       const canvas = await html2canvas(clone, {
         scale: 3,
         useCORS: true,
@@ -465,7 +470,7 @@ export default function CVPreview({ data, onBack }: Props) {
         width: A4W,
         height: clone.scrollHeight,
         windowWidth: A4W,
-        backgroundColor: null,
+        backgroundColor: pageBg,
       });
 
       document.body.removeChild(host);
@@ -2139,6 +2144,3 @@ export default function CVPreview({ data, onBack }: Props) {
     </div>
   );
 }
-
-
-
