@@ -1,7 +1,18 @@
 import React, { useRef, useState, useLayoutEffect } from "react";
 import { CVData } from "@/types/cv";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Download, Eye } from "lucide-react";
+import {
+  ArrowLeft,
+  Download,
+  Eye,
+  FileImage,
+  FileText,
+  Printer,
+  Link2,
+  X,
+  Check,
+  Loader2,
+} from "lucide-react";
 
 interface Props {
   data: CVData;
@@ -329,7 +340,9 @@ function CvScaleWrapper({ children }: { children: React.ReactNode }) {
 
 export default function CVPreview({ data, onBack }: Props) {
   const cvRef = useRef<HTMLDivElement>(null);
-  const [downloading, setDownloading] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportingType, setExportingType] = useState<string | null>(null);
+  const [copyDone, setCopyDone] = useState(false);
 
   const accentHex = COLOR_MAP[data.accentColor] || "#2563eb";
   const cfg = resolveConfig(data.template, accentHex);
@@ -343,154 +356,122 @@ export default function CVPreview({ data, onBack }: Props) {
     languages,
   } = data;
 
-  // ─── PDF download ───────────────────────────────────────
-  const handleDownload = async () => {
-    if (!cvRef.current) return;
-    setDownloading(true);
+  // ─── CV elementidan canvas yaratish (umumiy yordamchi) ───
+  const buildCanvas = async (scale = 3) => {
+    if (!cvRef.current) throw new Error("CV ref yo'q");
+    const { default: html2canvas } = await import("html2canvas");
+    const el = cvRef.current;
+    const A4W = 794;
 
+    const host = document.createElement("div");
+    host.style.cssText =
+      "position:fixed;top:-99999px;left:-99999px;width:794px;overflow:visible;z-index:-1;";
+    document.body.appendChild(host);
+
+    const clone = el.cloneNode(true) as HTMLElement;
+    clone.style.cssText =
+      "width:794px;min-width:794px;transform:none;position:static;box-shadow:none;";
+    clone.style.backgroundColor = pageBg;
+    host.appendChild(clone);
+
+    const srcAll = el.querySelectorAll("*");
+    const clnAll = clone.querySelectorAll("*");
+    srcAll.forEach((src, i) => {
+      const dst = clnAll[i] as HTMLElement | undefined;
+      if (!dst) return;
+      const cs = getComputedStyle(src);
+      const bg = cs.backgroundColor;
+      if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent")
+        dst.style.backgroundColor = bg;
+      dst.style.color = cs.color;
+      if (cs.borderTopWidth !== "0px")
+        dst.style.borderTop = `${cs.borderTopWidth} ${cs.borderTopStyle} ${cs.borderTopColor}`;
+      if (cs.borderBottomWidth !== "0px")
+        dst.style.borderBottom = `${cs.borderBottomWidth} ${cs.borderBottomStyle} ${cs.borderBottomColor}`;
+      if (cs.borderLeftWidth !== "0px")
+        dst.style.borderLeft = `${cs.borderLeftWidth} ${cs.borderLeftStyle} ${cs.borderLeftColor}`;
+      if (cs.borderRightWidth !== "0px")
+        dst.style.borderRight = `${cs.borderRightWidth} ${cs.borderRightStyle} ${cs.borderRightColor}`;
+      if (cs.borderRadius && cs.borderRadius !== "0px") {
+        dst.style.borderRadius = cs.borderRadius;
+        dst.style.overflow = "hidden";
+      }
+    });
+
+    const srcImgs = Array.from(
+      el.querySelectorAll("img"),
+    ) as HTMLImageElement[];
+    const clnImgs = Array.from(
+      clone.querySelectorAll("img"),
+    ) as HTMLImageElement[];
+    await Promise.all(
+      srcImgs.map(async (srcImg, i) => {
+        const clnImg = clnImgs[i];
+        if (!clnImg) return;
+        if (srcImg.src.startsWith("data:image/svg")) return;
+        await new Promise<void>((res) => {
+          const tmp = new Image();
+          tmp.crossOrigin = "anonymous";
+          tmp.onload = () => {
+            const c = document.createElement("canvas");
+            c.width = tmp.naturalWidth || srcImg.naturalWidth || 200;
+            c.height = tmp.naturalHeight || srcImg.naturalHeight || 200;
+            c.getContext("2d")?.drawImage(tmp, 0, 0);
+            clnImg.src = c.toDataURL("image/png");
+            res();
+          };
+          tmp.onerror = () => res();
+          tmp.src = srcImg.src;
+        });
+        const cs = getComputedStyle(srcImg);
+        const br = cs.borderRadius;
+        if (br && br !== "0px") {
+          const w = srcImg.offsetWidth || 68;
+          const h = srcImg.offsetHeight || 68;
+          const wrap = document.createElement("div");
+          wrap.style.cssText = `width:${w}px;height:${h}px;min-width:${w}px;border-radius:${br};overflow:hidden;flex-shrink:0;display:inline-flex;`;
+          clnImg.parentNode?.insertBefore(wrap, clnImg);
+          wrap.appendChild(clnImg);
+          clnImg.style.cssText =
+            "width:100%;height:100%;object-fit:cover;border-radius:0;";
+        }
+      }),
+    );
+
+    const canvas = await html2canvas(clone, {
+      scale,
+      useCORS: true,
+      allowTaint: false,
+      logging: false,
+      width: A4W,
+      height: clone.scrollHeight,
+      windowWidth: A4W,
+      backgroundColor: pageBg,
+    });
+
+    document.body.removeChild(host);
+    return canvas;
+  };
+
+  // ─── PDF yuklash ─────────────────────────────────────────
+  const handleDownloadPDF = async () => {
+    setExportingType("pdf");
     try {
-      const { default: html2canvas } = await import("html2canvas");
       const { jsPDF } = await import("jspdf");
-
-      const el = cvRef.current;
-      const A4W = 794;
-
-      // ── 1. Ko'rinmas klon yaratamiz ──────────────────────
-      const host = document.createElement("div");
-      host.style.cssText =
-        "position:fixed;top:-99999px;left:-99999px;width:794px;overflow:visible;z-index:-1;";
-      document.body.appendChild(host);
-
-      const clone = el.cloneNode(true) as HTMLElement;
-      clone.style.cssText =
-        "width:794px;min-width:794px;transform:none;position:static;box-shadow:none;";
-      host.appendChild(clone);
-
-      // ── 2. Barcha computed stillarni inline ga ko'chiramiz ─
-      const srcAll = el.querySelectorAll("*");
-      const clnAll = clone.querySelectorAll("*");
-
-      srcAll.forEach((src, i) => {
-        const dst = clnAll[i] as HTMLElement | undefined;
-        if (!dst) return;
-        const cs = getComputedStyle(src);
-
-        // Fon rangi — faqat haqiqiy rang bo'lsa ko'chiramiz (transparent emas)
-        const bg = cs.backgroundColor;
-        if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") {
-          dst.style.backgroundColor = bg;
-        }
-
-        // Matn rangi
-        dst.style.color = cs.color;
-
-        // Border
-        if (cs.borderTopWidth !== "0px") {
-          dst.style.borderTop = `${cs.borderTopWidth} ${cs.borderTopStyle} ${cs.borderTopColor}`;
-        }
-        if (cs.borderBottomWidth !== "0px") {
-          dst.style.borderBottom = `${cs.borderBottomWidth} ${cs.borderBottomStyle} ${cs.borderBottomColor}`;
-        }
-        if (cs.borderLeftWidth !== "0px") {
-          dst.style.borderLeft = `${cs.borderLeftWidth} ${cs.borderLeftStyle} ${cs.borderLeftColor}`;
-        }
-        if (cs.borderRightWidth !== "0px") {
-          dst.style.borderRight = `${cs.borderRightWidth} ${cs.borderRightStyle} ${cs.borderRightColor}`;
-        }
-
-        // Border radius
-        if (cs.borderRadius && cs.borderRadius !== "0px") {
-          dst.style.borderRadius = cs.borderRadius;
-          dst.style.overflow = "hidden";
-        }
-      });
-
-      // ── 3. Rasmlarni base64 ga o'tkazib, clip qilamiz ────
-      const srcImgs = Array.from(
-        el.querySelectorAll("img"),
-      ) as HTMLImageElement[];
-      const clnImgs = Array.from(
-        clone.querySelectorAll("img"),
-      ) as HTMLImageElement[];
-
-      await Promise.all(
-        srcImgs.map(async (srcImg, i) => {
-          const clnImg = clnImgs[i];
-          if (!clnImg) return;
-
-          // SVG ikonlar — o'zgartirmasdan qoldiramiz
-          if (srcImg.src.startsWith("data:image/svg")) return;
-
-          // Rasmni canvas orqali base64 ga
-          await new Promise<void>((res) => {
-            const tmp = new Image();
-            tmp.crossOrigin = "anonymous";
-            tmp.onload = () => {
-              const c = document.createElement("canvas");
-              c.width = tmp.naturalWidth || srcImg.naturalWidth || 200;
-              c.height = tmp.naturalHeight || srcImg.naturalHeight || 200;
-              c.getContext("2d")?.drawImage(tmp, 0, 0);
-              clnImg.src = c.toDataURL("image/png");
-              res();
-            };
-            tmp.onerror = () => res();
-            tmp.src = srcImg.src;
-          });
-
-          // Dumaloq rasm uchun overflow:hidden wrapper
-          const cs = getComputedStyle(srcImg);
-          const br = cs.borderRadius;
-          if (br && br !== "0px") {
-            const w = srcImg.offsetWidth || 68;
-            const h = srcImg.offsetHeight || 68;
-
-            const wrap = document.createElement("div");
-            wrap.style.cssText = `
-              width:${w}px;height:${h}px;min-width:${w}px;
-              border-radius:${br};overflow:hidden;
-              flex-shrink:0;display:inline-flex;
-            `;
-            clnImg.parentNode?.insertBefore(wrap, clnImg);
-            wrap.appendChild(clnImg);
-            clnImg.style.cssText =
-              "width:100%;height:100%;object-fit:cover;border-radius:0;";
-          }
-        }),
-      );
-
-      // ── 4. html2canvas bilan render ──────────────────────
-      // pageBg ni inline stil sifatida clone ga ham o'rnatamiz
-      clone.style.backgroundColor = pageBg;
-
-      const canvas = await html2canvas(clone, {
-        scale: 3,
-        useCORS: true,
-        allowTaint: false,
-        logging: false,
-        width: A4W,
-        height: clone.scrollHeight,
-        windowWidth: A4W,
-        backgroundColor: pageBg,
-      });
-
-      document.body.removeChild(host);
-
-      // ── 5. PDF ga yozamiz ─────────────────────────────────
+      const canvas = await buildCanvas(3);
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "mm",
         format: "a4",
         compress: false,
       });
-
-      const PW = 210;
-      const PH = 297;
-      const cW = canvas.width;
-      const cH = canvas.height;
+      const PW = 210,
+        PH = 297;
+      const cW = canvas.width,
+        cH = canvas.height;
       const pageHpx = Math.round((PH / PW) * cW);
-
-      let y = 0;
-      let page = 0;
+      let y = 0,
+        page = 0;
       while (y < cH) {
         if (page > 0) pdf.addPage();
         const slice = Math.min(pageHpx, cH - y);
@@ -511,13 +492,273 @@ export default function CVPreview({ data, onBack }: Props) {
         y += slice;
         page++;
       }
-
       pdf.save(`${p.fullName || "CV"}.pdf`);
+      setShowExportModal(false);
     } catch (e) {
       console.error(e);
       alert("PDF yaratishda xatolik yuz berdi.");
     } finally {
-      setDownloading(false);
+      setExportingType(null);
+    }
+  };
+
+  // ─── PNG yuklash ─────────────────────────────────────────
+  const handleDownloadPNG = async () => {
+    setExportingType("png");
+    try {
+      const canvas = await buildCanvas(3);
+      const link = document.createElement("a");
+      link.download = `${p.fullName || "CV"}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+      setShowExportModal(false);
+    } catch (e) {
+      console.error(e);
+      alert("PNG yaratishda xatolik yuz berdi.");
+    } finally {
+      setExportingType(null);
+    }
+  };
+
+  // ─── JPG yuklash ─────────────────────────────────────────
+  const handleDownloadJPG = async () => {
+    setExportingType("jpg");
+    try {
+      const canvas = await buildCanvas(3);
+      const link = document.createElement("a");
+      link.download = `${p.fullName || "CV"}.jpg`;
+      link.href = canvas.toDataURL("image/jpeg", 0.95);
+      link.click();
+      setShowExportModal(false);
+    } catch (e) {
+      console.error(e);
+      alert("JPG yaratishda xatolik yuz berdi.");
+    } finally {
+      setExportingType(null);
+    }
+  };
+
+  // ─── SVG yuklash ─────────────────────────────────────────
+  const handleDownloadSVG = async () => {
+    setExportingType("svg");
+    try {
+      const canvas = await buildCanvas(2);
+      const imgData = canvas.toDataURL("image/png");
+      const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}"><image href="${imgData}" width="${canvas.width}" height="${canvas.height}"/></svg>`;
+      const blob = new Blob([svgContent], { type: "image/svg+xml" });
+      const link = document.createElement("a");
+      link.download = `${p.fullName || "CV"}.svg`;
+      link.href = URL.createObjectURL(blob);
+      link.click();
+      setShowExportModal(false);
+    } catch (e) {
+      console.error(e);
+      alert("SVG yaratishda xatolik yuz berdi.");
+    } finally {
+      setExportingType(null);
+    }
+  };
+
+  // ─── DOCX yuklash ────────────────────────────────────────
+  const handleDownloadDOCX = async () => {
+    setExportingType("docx");
+    try {
+      const {
+        Document,
+        Packer,
+        Paragraph,
+        TextRun,
+        HeadingLevel,
+        AlignmentType,
+        BorderStyle,
+      } = await import("docx");
+
+      const accentRgb = accentHex.replace("#", "");
+
+      const makeSectionHeader = (text: string) =>
+        new Paragraph({
+          children: [
+            new TextRun({
+              text,
+              bold: true,
+              size: 22,
+              color: accentRgb,
+              allCaps: true,
+            }),
+          ],
+          spacing: { before: 240, after: 80 },
+          border: {
+            bottom: {
+              style: BorderStyle.SINGLE,
+              size: 6,
+              color: accentRgb,
+              space: 3,
+            },
+          },
+        });
+
+      const makeText = (
+        text: string,
+        opts: { bold?: boolean; size?: number; color?: string } = {},
+      ) =>
+        new Paragraph({
+          children: [
+            new TextRun({
+              text,
+              bold: opts.bold,
+              size: opts.size ?? 20,
+              color: opts.color ?? "1e293b",
+            }),
+          ],
+          spacing: { after: 60 },
+        });
+
+      const sections: Paragraph[] = [];
+
+      // Header
+      sections.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: p.fullName || "",
+              bold: true,
+              size: 36,
+              color: "1e293b",
+            }),
+          ],
+          alignment: AlignmentType.LEFT,
+          spacing: { after: 80 },
+        }),
+      );
+      const contactParts = [
+        p.phone,
+        p.email,
+        p.address,
+        p.linkedin,
+        p.telegram,
+      ].filter(Boolean);
+      if (contactParts.length)
+        sections.push(
+          makeText(contactParts.join("  |  "), { size: 18, color: "6b7280" }),
+        );
+
+      // Profil
+      if (p.summary) {
+        sections.push(makeSectionHeader("PROFIL"));
+        sections.push(makeText(p.summary));
+      }
+
+      // Ish tajribasi
+      if (workExperience.length > 0) {
+        sections.push(makeSectionHeader("ISH TAJRIBASI"));
+        workExperience.forEach((w) => {
+          sections.push(
+            new Paragraph({
+              children: [
+                new TextRun({ text: w.jobTitle || "", bold: true, size: 22 }),
+                new TextRun({
+                  text: w.company ? `  —  ${w.company}` : "",
+                  color: accentRgb,
+                  size: 22,
+                }),
+                new TextRun({
+                  text: `\t${w.startDate} — ${w.current ? "Hozir" : w.endDate}`,
+                  size: 18,
+                  color: "94a3b8",
+                }),
+              ],
+              spacing: { after: 40 },
+            }),
+          );
+          if (w.location)
+            sections.push(makeText(w.location, { size: 18, color: "64748b" }));
+          if (w.description)
+            sections.push(
+              makeText(w.description, { size: 18, color: "374151" }),
+            );
+        });
+      }
+
+      // Ta'lim
+      if (education.length > 0) {
+        sections.push(makeSectionHeader("TA'LIM"));
+        education.forEach((e) => {
+          sections.push(
+            new Paragraph({
+              children: [
+                new TextRun({ text: e.degree || "", bold: true, size: 22 }),
+                new TextRun({
+                  text: e.university ? `  —  ${e.university}` : "",
+                  color: accentRgb,
+                  size: 22,
+                }),
+                new TextRun({
+                  text: `\t${e.startYear} — ${e.endYear}`,
+                  size: 18,
+                  color: "94a3b8",
+                }),
+              ],
+              spacing: { after: 40 },
+            }),
+          );
+          if (e.description)
+            sections.push(
+              makeText(e.description, { size: 18, color: "64748b" }),
+            );
+        });
+      }
+
+      // Ko'nikmalar
+      const allSkills = [...skills.technical, ...skills.soft];
+      if (allSkills.length > 0) {
+        sections.push(makeSectionHeader("KO'NIKMALAR"));
+        allSkills.forEach((s) => {
+          const dots = "█".repeat(s.level) + "░".repeat(5 - s.level);
+          sections.push(makeText(`${s.name}   ${dots}`, { size: 19 }));
+        });
+      }
+
+      // Tillar
+      if (languages.length > 0) {
+        sections.push(makeSectionHeader("TILLAR"));
+        languages.forEach((l) =>
+          sections.push(makeText(`${l.name}  —  ${l.level}`, { size: 19 })),
+        );
+      }
+
+      const doc = new Document({
+        sections: [{ children: sections }],
+      });
+
+      const blob = await Packer.toBlob(doc);
+      const link = document.createElement("a");
+      link.download = `${p.fullName || "CV"}.docx`;
+      link.href = URL.createObjectURL(blob);
+      link.click();
+      setShowExportModal(false);
+    } catch (e) {
+      console.error(e);
+      alert("DOCX yaratishda xatolik yuz berdi.");
+    } finally {
+      setExportingType(null);
+    }
+  };
+
+  // ─── Print ───────────────────────────────────────────────
+  const handlePrint = () => {
+    window.print();
+    setShowExportModal(false);
+  };
+
+  // ─── Link copy ───────────────────────────────────────────
+  const handleCopyLink = async () => {
+    try {
+      const url = window.location.href;
+      await navigator.clipboard.writeText(url);
+      setCopyDone(true);
+      setTimeout(() => setCopyDone(false), 2000);
+    } catch {
+      alert("Havola nusxalanmadi. Brauzer ruxsat bermadi.");
     }
   };
   // ─── ATS Score ──────────────────────────────────────────
@@ -819,6 +1060,238 @@ export default function CVPreview({ data, onBack }: Props) {
   // ==========================================================
   return (
     <div className="min-h-screen bg-slate-100">
+      {/* ── Export Modal ──────────────────────────────────── */}
+      {showExportModal && (
+        <div
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center"
+          style={{
+            backgroundColor: "rgba(0,0,0,0.55)",
+            backdropFilter: "blur(4px)",
+          }}
+          onClick={() => setShowExportModal(false)}
+        >
+          <div
+            className="relative w-full sm:w-auto sm:min-w-[400px] rounded-t-2xl sm:rounded-2xl bg-white shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <div>
+                <h3 className="font-semibold text-gray-900 text-lg">
+                  CV ni yuklash
+                </h3>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Kerakli formatni tanlang
+                </p>
+              </div>
+              <button
+                onClick={() => setShowExportModal(false)}
+                className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Export options */}
+            <div className="px-4 py-3 space-y-2">
+              {/* PDF */}
+              <button
+                onClick={handleDownloadPDF}
+                disabled={exportingType !== null}
+                className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-red-50 border border-transparent hover:border-red-100 transition-all group disabled:opacity-60"
+              >
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ backgroundColor: "#fff1f2" }}
+                >
+                  {exportingType === "pdf" ? (
+                    <Loader2 className="w-5 h-5 animate-spin text-red-500" />
+                  ) : (
+                    <Download className="w-5 h-5 text-red-500" />
+                  )}
+                </div>
+                <div className="text-left">
+                  <p className="font-semibold text-gray-800 text-sm">
+                    PDF fayl
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    Eng ko'p ishlatiladigan format
+                  </p>
+                </div>
+                <span className="ml-auto text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-600">
+                  PDF
+                </span>
+              </button>
+
+              {/* PNG */}
+              <button
+                onClick={handleDownloadPNG}
+                disabled={exportingType !== null}
+                className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-blue-50 border border-transparent hover:border-blue-100 transition-all group disabled:opacity-60"
+              >
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ backgroundColor: "#eff6ff" }}
+                >
+                  {exportingType === "png" ? (
+                    <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+                  ) : (
+                    <FileImage className="w-5 h-5 text-blue-500" />
+                  )}
+                </div>
+                <div className="text-left">
+                  <p className="font-semibold text-gray-800 text-sm">
+                    PNG rasm
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    Yuqori sifatli rasm fayli
+                  </p>
+                </div>
+                <span className="ml-auto text-xs font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-600">
+                  PNG
+                </span>
+              </button>
+
+              {/* JPG */}
+              <button
+                onClick={handleDownloadJPG}
+                disabled={exportingType !== null}
+                className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-sky-50 border border-transparent hover:border-sky-100 transition-all group disabled:opacity-60"
+              >
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ backgroundColor: "#f0f9ff" }}
+                >
+                  {exportingType === "jpg" ? (
+                    <Loader2 className="w-5 h-5 animate-spin text-sky-500" />
+                  ) : (
+                    <FileImage className="w-5 h-5 text-sky-500" />
+                  )}
+                </div>
+                <div className="text-left">
+                  <p className="font-semibold text-gray-800 text-sm">
+                    JPG rasm
+                  </p>
+                  <p className="text-xs text-gray-400">Kichik hajmli rasm</p>
+                </div>
+                <span className="ml-auto text-xs font-medium px-2 py-0.5 rounded-full bg-sky-100 text-sky-600">
+                  JPG
+                </span>
+              </button>
+
+              {/* SVG */}
+              <button
+                onClick={handleDownloadSVG}
+                disabled={exportingType !== null}
+                className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-violet-50 border border-transparent hover:border-violet-100 transition-all group disabled:opacity-60"
+              >
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ backgroundColor: "#f5f3ff" }}
+                >
+                  {exportingType === "svg" ? (
+                    <Loader2 className="w-5 h-5 animate-spin text-violet-500" />
+                  ) : (
+                    <FileImage className="w-5 h-5 text-violet-500" />
+                  )}
+                </div>
+                <div className="text-left">
+                  <p className="font-semibold text-gray-800 text-sm">
+                    SVG fayl
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    Vektor format, o'lchamlari o'zgarmas
+                  </p>
+                </div>
+                <span className="ml-auto text-xs font-medium px-2 py-0.5 rounded-full bg-violet-100 text-violet-600">
+                  SVG
+                </span>
+              </button>
+
+              {/* DOCX */}
+              <button
+                onClick={handleDownloadDOCX}
+                disabled={exportingType !== null}
+                className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-blue-50 border border-transparent hover:border-blue-100 transition-all group disabled:opacity-60"
+              >
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ backgroundColor: "#dbeafe" }}
+                >
+                  {exportingType === "docx" ? (
+                    <Loader2 className="w-5 h-5 animate-spin text-blue-700" />
+                  ) : (
+                    <FileText className="w-5 h-5 text-blue-700" />
+                  )}
+                </div>
+                <div className="text-left">
+                  <p className="font-semibold text-gray-800 text-sm">
+                    Word (DOCX)
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    Microsoft Word formati
+                  </p>
+                </div>
+                <span className="ml-auto text-xs font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                  DOCX
+                </span>
+              </button>
+
+              {/* Divider */}
+              <div className="my-1 border-t border-gray-100" />
+
+              {/* Print */}
+              <button
+                onClick={handlePrint}
+                className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-all"
+              >
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-gray-100">
+                  <Printer className="w-5 h-5 text-gray-600" />
+                </div>
+                <div className="text-left">
+                  <p className="font-semibold text-gray-800 text-sm">
+                    Chop etish
+                  </p>
+                  <p className="text-xs text-gray-400">Printerga yuborish</p>
+                </div>
+                <span className="ml-auto text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                  Print
+                </span>
+              </button>
+
+              {/* Copy Link */}
+              <button
+                onClick={handleCopyLink}
+                className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl hover:bg-green-50 border border-transparent hover:border-green-100 transition-all"
+              >
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ backgroundColor: copyDone ? "#dcfce7" : "#f0fdf4" }}
+                >
+                  {copyDone ? (
+                    <Check className="w-5 h-5 text-green-600" />
+                  ) : (
+                    <Link2 className="w-5 h-5 text-green-600" />
+                  )}
+                </div>
+                <div className="text-left">
+                  <p className="font-semibold text-gray-800 text-sm">
+                    {copyDone ? "Nusxalandi!" : "Havolani nusxalash"}
+                  </p>
+                  <p className="text-xs text-gray-400">Ulashish uchun link</p>
+                </div>
+                <span className="ml-auto text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-600">
+                  Share
+                </span>
+              </button>
+            </div>
+
+            {/* Bottom safe area for mobile */}
+            <div className="h-4" />
+          </div>
+        </div>
+      )}
+
       {/* Toolbar */}
       <div className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-5xl mx-auto flex items-center justify-between px-4 py-3">
@@ -838,13 +1311,27 @@ export default function CVPreview({ data, onBack }: Props) {
               </span>
             </div>
             <Button
-              onClick={handleDownload}
-              disabled={downloading}
-              className="gap-2"
+              onClick={() => setShowExportModal(true)}
+              className="gap-2 pr-3"
               style={{ backgroundColor: accentHex, color: "#fff" }}
             >
               <Download className="w-4 h-4" />
-              <span>{downloading ? "Yuklanmoqda..." : "PDF yuklash"}</span>
+              <span className="hidden sm:inline">Yuklash</span>
+              <span className="sm:hidden">Yuklash</span>
+              <span className="w-px h-4 bg-white/30 mx-1 hidden sm:block" />
+              <svg
+                className="w-3.5 h-3.5 hidden sm:block"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2.5}
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
             </Button>
           </div>
         </div>
