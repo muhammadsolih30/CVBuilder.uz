@@ -15,7 +15,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       {/* basename — GitHub Pages repo nomiga mos bo'lishi kerak */}
-      <BrowserRouter basename="/CVBuilder.uz">
+      <BrowserRouter basename="/">
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/builder" element={<BuilderPage />} />
