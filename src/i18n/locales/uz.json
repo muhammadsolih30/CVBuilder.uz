@@ -36,5 +36,47 @@
     "certificates": "SERTIFIKATLAR VA KURSLAR",
     "contact": "KONTAKT",
     "present": "Hozir"
+  },
+  "landing": {
+    "badges": {
+      "free": "100% Bepul",
+      "noRegister": "Ro'yxatdan o'tmasdan",
+      "ats": "ATS-friendly 99%",
+      "formats": "PDF & Word (DOCX)"
+    },
+    "templates": {
+      "title": "1000+ Professional Shablonlar",
+      "subtitle": "Barcha sohalar uchun maxsus ishlab chiqilgan, xalqaro standartlarga mos dizaynlar",
+      "categories": {
+        "all": "Barchasi (1000+)",
+        "modern": "Zamonaviy",
+        "ats": "ATS Standart",
+        "it": "IT & Dasturchi",
+        "creative": "Kreativ & Dizayn",
+        "executive": "Executive & Rahbar",
+        "minimal": "Minimal & Toza",
+        "student": "Talabalar uchun"
+      },
+      "search": "Shablon qidirish...",
+      "viewAll": "Barcha 1000+ shablonlarni ko'rish"
+    },
+    "features": {
+      "title": "Nima uchun aynan CVBuilder.uz?",
+      "subtitle": "Oddiy matn muharrirlaridan farqli ravishda, platformamiz sizni suhbatga chaqirilish imkoniyatingizni oshiradi",
+      "cards": {
+        "f1_title": "100% ATS-Friendly formatlar",
+        "f1_desc": "Barcha xalqaro va yirik kompaniyalar Applicant Tracking System tizimiga to'liq mos tuzilma.",
+        "f2_title": "1000+ Professional Shablonlar",
+        "f2_desc": "IT, marketing, dizayn, moliya va boshqaruv sohalari uchun maxsus moslashtirilgan zamonaviy dizaynlar.",
+        "f3_title": "Jonli Split-Screen Tahrirlash",
+        "f3_desc": "Ma'lumot kiritayotganingizda, o'ng tomonda A4 varaqdagi o'zgarishlar real-vaqtda ko'rinadi.",
+        "f4_title": "Ko'p tilli qo'llab-quvvatlash",
+        "f4_desc": "O'zbek, Rus va Ingliz tillarida CV tayyorlang. Mahalliy va xorijiy kompaniyalar uchun mos.",
+        "f5_title": "100% Xavfsiz va Maxfiy",
+        "f5_desc": "Ma'lumotlaringiz begona serverlarga yuborilmaydi. Faqat sizning brauzeringizda saqlanadi.",
+        "f6_title": "Barcha Mashhur Formatlar",
+        "f6_desc": "PDF, Word (DOCX), PNG, JPG va SVG fayl sifatida bir bosish bilan eksport qiling."
+      }
+    }
   }
 }

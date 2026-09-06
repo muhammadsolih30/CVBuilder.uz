@@ -358,16 +358,16 @@ export default function LandingPage() {
               {/* Trust Badges */}
               <div className="flex flex-wrap items-center justify-center gap-y-3 gap-x-6 text-xs sm:text-sm text-muted-foreground font-medium">
                 <span className="flex items-center gap-1.5">
-                  <CheckCircle className="w-4 h-4 text-emerald-500" /> 100% Bepul
+                  <CheckCircle className="w-4 h-4 text-emerald-500" /> {t("landing.badges.free")}
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <CheckCircle className="w-4 h-4 text-emerald-500" /> Ro'yxatdan o'tmasdan
+                  <CheckCircle className="w-4 h-4 text-emerald-500" /> {t("landing.badges.noRegister")}
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <CheckCircle className="w-4 h-4 text-emerald-500" /> ATS-friendly 99%
+                  <CheckCircle className="w-4 h-4 text-emerald-500" /> {t("landing.badges.ats")}
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <CheckCircle className="w-4 h-4 text-emerald-500" /> PDF & Word (DOCX)
+                  <CheckCircle className="w-4 h-4 text-emerald-500" /> {t("landing.badges.formats")}
                 </span>
               </div>
             </motion.div>
@@ -404,10 +404,10 @@ export default function LandingPage() {
                 Katalog & Vitrina
               </span>
               <h2 className="text-3xl sm:text-4xl font-extrabold mt-1 tracking-tight">
-                1000+ Professional Shablonlar
+                {t("landing.templates.title")}
               </h2>
               <p className="text-muted-foreground text-sm sm:text-base mt-2 max-w-2xl mx-auto">
-                Barcha sohalar uchun maxsus ishlab chiqilgan, xalqaro standartlarga mos dizaynlar
+                {t("landing.templates.subtitle")}
               </p>
             </div>
 
@@ -550,10 +550,10 @@ export default function LandingPage() {
                 Afzalliklar
               </span>
               <h2 className="text-3xl sm:text-4xl font-extrabold mt-1 tracking-tight">
-                Nima uchun aynan CVBuilder.uz?
+                {t("landing.features.title")}
               </h2>
               <p className="text-muted-foreground text-sm sm:text-base mt-2 max-w-2xl mx-auto">
-                Oddiy matn muharrirlaridan farqli ravishda, platformamiz sizni suhbatga chaqirilish imkoniyatingizni oshiradi
+                {t("landing.features.subtitle")}
               </p>
             </div>
 
@@ -566,9 +566,9 @@ export default function LandingPage() {
                   <div className={`w-10 h-10 rounded-xl ${f.bg} flex items-center justify-center ${f.color}`}>
                     <f.icon className="w-5 h-5" />
                   </div>
-                  <h3 className="font-bold text-base text-foreground">{f.title}</h3>
+                  <h3 className="font-bold text-base text-foreground">{t(`landing.features.cards.f${i + 1}_title`)}</h3>
                   <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                    {f.desc}
+                    {t(`landing.features.cards.f${i + 1}_desc`)}
                   </p>
                 </div>
               ))}

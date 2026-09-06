@@ -11,6 +11,7 @@ import {
   Upload,
   Sparkles,
   BookOpen,
+  Save,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -25,6 +26,7 @@ import StepTemplate from "@/components/builder/StepTemplate";
 import CVPreview from "@/components/builder/CVPreview";
 import SplitPreviewPanel from "@/components/builder/SplitPreviewPanel";
 import CVScoreWidget from "@/components/builder/CVScoreWidget";
+import SavedCVsModal from "@/components/builder/SavedCVsModal";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useTranslation } from "react-i18next";
@@ -46,6 +48,7 @@ export default function BuilderPage() {
   const [step, setStep] = useState(0);
   const [showPreview, setShowPreview] = useState(false);
   const [isSplitPreview, setIsSplitPreview] = useState(true);
+  const [isSavedModalOpen, setIsSavedModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -97,6 +100,10 @@ export default function BuilderPage() {
       }
     };
     reader.readAsText(file);
+  };
+
+  const handleLoadSaved = () => {
+    setIsSavedModalOpen(true);
   };
 
   const renderStep = () => {
@@ -190,6 +197,16 @@ export default function BuilderPage() {
         className="hidden"
       />
 
+      {/* Multiple Saved CVs Modal */}
+      <SavedCVsModal
+        isOpen={isSavedModalOpen}
+        onClose={() => setIsSavedModalOpen(false)}
+        onLoad={(data) => {
+          importJSON(data);
+          alert("Saqlangan shablon muvaffaqiyatli yuklandi!");
+        }}
+      />
+
       {/* Top Bar */}
       <div className="sticky top-0 z-50 bg-card/90 backdrop-blur-md border-b border-border shadow-sm">
         <div className="w-full px-4 sm:px-6 flex items-center justify-between h-14">
@@ -232,6 +249,18 @@ export default function BuilderPage() {
                 <span>Marketing Namunasi</span>
               </Button>
             </div>
+
+            {/* Saqlanganlarni yuklash */}
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={handleLoadSaved}
+              className="text-xs h-8 text-muted-foreground hover:text-emerald-600 hidden md:flex"
+              title="Saqlangan rezyumeni tiklash"
+            >
+              <Save className="w-3.5 h-3.5 mr-1" />
+              <span>Saqlanganlar</span>
+            </Button>
 
             {/* Zaxira yuklab olish */}
             <Button
@@ -392,9 +421,23 @@ export default function BuilderPage() {
                 className="font-semibold"
                 onClick={() => {
                   try {
+                    // Update array of saved CVs
+                    const listStr = localStorage.getItem("cv-builder-saved-list");
+                    const list = listStr ? JSON.parse(listStr) : [];
+                    list.push({
+                      id: Date.now().toString(),
+                      name: cvData.personalInfo.fullName || "Mening Rezyumem",
+                      date: new Date().toISOString(),
+                      data: cvData,
+                    });
+                    localStorage.setItem("cv-builder-saved-list", JSON.stringify(list));
+                    
+                    // Keep the latest for auto-load on refresh
                     localStorage.setItem("cv-builder-data", JSON.stringify(cvData));
-                    alert(t("builder.saveSuccess"));
-                  } catch {}
+                    alert(t("builder.saveSuccess", "CV muvaffaqiyatli saqlandi!"));
+                  } catch (e) {
+                    console.error(e);
+                  }
                 }}
               >
                 {t("builder.save")}

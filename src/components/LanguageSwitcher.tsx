@@ -23,14 +23,23 @@ export function LanguageSwitcher() {
           <span className="sr-only">Change Language</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => changeLanguage('uz')}>
+      <DropdownMenuContent align="end" className="w-40">
+        <DropdownMenuItem 
+          onClick={() => changeLanguage('uz')}
+          className={`cursor-pointer py-2.5 px-3 text-sm rounded-md transition-colors ${i18n.language === 'uz' ? 'bg-emerald-500 text-white font-medium hover:bg-emerald-600 focus:bg-emerald-600 focus:text-white' : ''}`}
+        >
           O'zbekcha
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => changeLanguage('ru')}>
+        <DropdownMenuItem 
+          onClick={() => changeLanguage('ru')}
+          className={`cursor-pointer py-2.5 px-3 text-sm rounded-md transition-colors ${i18n.language === 'ru' ? 'bg-emerald-500 text-white font-medium hover:bg-emerald-600 focus:bg-emerald-600 focus:text-white' : ''}`}
+        >
           Русский
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => changeLanguage('en')}>
+        <DropdownMenuItem 
+          onClick={() => changeLanguage('en')}
+          className={`cursor-pointer py-2.5 px-3 text-sm rounded-md transition-colors ${i18n.language === 'en' || i18n.language === 'en-US' ? 'bg-emerald-500 text-white font-medium hover:bg-emerald-600 focus:bg-emerald-600 focus:text-white' : ''}`}
+        >
           English
         </DropdownMenuItem>
       </DropdownMenuContent>

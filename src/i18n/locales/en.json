@@ -36,5 +36,47 @@
     "certificates": "CERTIFICATES & COURSES",
     "contact": "CONTACT",
     "present": "Present"
+  },
+  "landing": {
+    "badges": {
+      "free": "100% Free",
+      "noRegister": "No Registration",
+      "ats": "ATS-friendly 99%",
+      "formats": "PDF & Word (DOCX)"
+    },
+    "templates": {
+      "title": "1000+ Professional Templates",
+      "subtitle": "Specially designed for all industries, conforming to international standards",
+      "categories": {
+        "all": "All (1000+)",
+        "modern": "Modern",
+        "ats": "ATS Standard",
+        "it": "IT & Developer",
+        "creative": "Creative & Design",
+        "executive": "Executive",
+        "minimal": "Minimal & Clean",
+        "student": "For Students"
+      },
+      "search": "Search templates...",
+      "viewAll": "View all 1000+ templates"
+    },
+    "features": {
+      "title": "Why choose CVBuilder.uz?",
+      "subtitle": "Unlike plain text editors, our platform increases your chances of getting an interview",
+      "cards": {
+        "f1_title": "100% ATS-Friendly Formats",
+        "f1_desc": "A structure fully compatible with the Applicant Tracking System of all international and large companies.",
+        "f2_title": "1000+ Professional Templates",
+        "f2_desc": "Modern designs specially tailored for IT, marketing, design, finance, and management.",
+        "f3_title": "Live Split-Screen Editing",
+        "f3_desc": "As you enter data, changes to the A4 sheet appear in real-time on the right.",
+        "f4_title": "Multilingual Support",
+        "f4_desc": "Create CVs in Uzbek, Russian, and English. Suitable for local and foreign companies.",
+        "f5_title": "100% Safe and Confidential",
+        "f5_desc": "Your data is not sent to external servers. It is saved only in your browser.",
+        "f6_title": "All Popular Formats",
+        "f6_desc": "Export as PDF, Word (DOCX), PNG, JPG, and SVG with a single click."
+      }
+    }
   }
 }

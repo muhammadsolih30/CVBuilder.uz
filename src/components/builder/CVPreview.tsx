@@ -850,7 +850,7 @@ export default function CVPreview({
     fg: string;
     bg: string;
   }) => (
-    <div style={{ display: "flex", gap: 2 }}>
+    <div style={{ display: "flex" }}>
       {[1, 2, 3, 4, 5].map((n) => (
         <div
           key={n}
@@ -859,6 +859,7 @@ export default function CVPreview({
             height: 3,
             borderRadius: 2,
             backgroundColor: n <= level ? fg : bg,
+            marginRight: n < 5 ? 2 : 0,
           }}
         />
       ))}
@@ -1037,32 +1038,32 @@ export default function CVPreview({
     acol: string;
     dotEmpty: string;
   }) => (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+    <div style={{ display: "flex", width: "100%", justifyContent: "space-between" }}>
       {(skills.technical.length > 0 || skills.soft.length > 0) && (
-        <div>
+        <div style={{ width: languages.length > 0 ? "48%" : "100%" }}>
           <p style={SH({ color: acol })}>KO'NIKMALAR</p>
           {[...skills.technical, ...skills.soft].map((s) => (
-            <div key={s.id} style={{ marginBottom: 7 }}>
-              <p
-                style={{ fontSize: 10 * fs, marginBottom: 2, color: bodyText }}
+            <div key={s.id} style={{ marginBottom: 8, display: "flex", flexDirection: "column" }}>
+              <div
+                style={{ fontSize: 10 * fs, marginBottom: 4, color: bodyText, lineHeight: 1.3, wordWrap: "break-word" }}
               >
                 {s.name}
-              </p>
+              </div>
               <Dots level={s.level} fg={acol} bg={dotEmpty} />
             </div>
           ))}
         </div>
       )}
       {languages.length > 0 && (
-        <div>
+        <div style={{ width: (skills.technical.length > 0 || skills.soft.length > 0) ? "48%" : "100%" }}>
           <p style={SH({ color: acol })}>TILLAR</p>
           {languages.map((l) => (
-            <p
+            <div
               key={l.id}
-              style={{ fontSize: 10 * fs, marginBottom: 5, color: bodyText }}
+              style={{ fontSize: 10 * fs, marginBottom: 6, color: bodyText, lineHeight: 1.3, wordWrap: "break-word" }}
             >
               {l.name} — <span style={{ color: subText }}>{l.level}</span>
-            </p>
+            </div>
           ))}
         </div>
       )}
