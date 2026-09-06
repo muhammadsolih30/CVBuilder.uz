@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useCVData } from "@/hooks/useCVData";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -8,7 +8,6 @@ import {
   Eye,
   Columns,
   Download,
-  Upload,
   Sparkles,
   BookOpen,
   Save,
@@ -27,6 +26,7 @@ import CVPreview from "@/components/builder/CVPreview";
 import SplitPreviewPanel from "@/components/builder/SplitPreviewPanel";
 import CVScoreWidget from "@/components/builder/CVScoreWidget";
 import SavedCVsModal from "@/components/builder/SavedCVsModal";
+import BuilderActionsModal from "@/components/builder/BuilderActionsModal";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useTranslation } from "react-i18next";
@@ -49,7 +49,18 @@ export default function BuilderPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [isSplitPreview, setIsSplitPreview] = useState(true);
   const [isSavedModalOpen, setIsSavedModalOpen] = useState(false);
+  const [isActionsModalOpen, setIsActionsModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const stepTabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  // Mobil yoki kichik ekranda faol bosqichni avtomatik markazga surish
+  useEffect(() => {
+    stepTabRefs.current[step]?.scrollIntoView({
+      behavior: "smooth",
+      inline: "center",
+      block: "nearest",
+    });
+  }, [step]);
 
   const {
     cvData,
@@ -70,36 +81,36 @@ export default function BuilderPage() {
   };
 
   const handleReset = () => {
-    if (window.confirm("Barcha ma'lumotlarni tozalab, yangidan boshlamoqchimisiz?")) {
+    if (confirm(t("builder.resetConfirm", "Barcha ma'lumotlarni tozalashni xohlaysizmi?"))) {
       resetData();
-      goToStep(0);
     }
   };
 
   const handleLoadDemo = (type: 'it' | 'marketing') => {
-    if (
-      cvData.personalInfo.fullName &&
-      !window.confirm("Mavjud ma'lumotlaringiz namunaviy ma'lumotlar bilan almashtiriladi. Rozimisiz?")
-    ) {
-      return;
+    if (confirm("Namunaviy ma'lumotlar bilan to'ldirilsinmi? Hozirgi ma'lumotlaringiz o'chirilishi mumkin.")) {
+      loadDemo(type);
     }
-    loadDemo(type);
   };
 
   const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => {
+    reader.onload = (event) => {
       try {
-        const parsed = JSON.parse(ev.target?.result as string);
-        importJSON(parsed);
-        alert("CV ma'lumotlari muvaffaqiyatli tiklandi!");
-      } catch {
-        alert("Fayl formati noto'g'ri. JSON fayl yuklang.");
+        const json = JSON.parse(event.target?.result as string);
+        importJSON(json);
+        alert("CV muvaffaqiyatli tiklandi!");
+      } catch (err) {
+        alert("Faylni o'qishda xatolik yuz berdi!");
       }
     };
     reader.readAsText(file);
+    e.target.value = "";
+  };
+
+  const handleFileImportClick = () => {
+    fileInputRef.current?.click();
   };
 
   const handleLoadSaved = () => {
@@ -207,12 +218,23 @@ export default function BuilderPage() {
         }}
       />
 
+      {/* Responsive Actions & Templates Modal */}
+      <BuilderActionsModal
+        isOpen={isActionsModalOpen}
+        onClose={() => setIsActionsModalOpen(false)}
+        onLoadDemo={handleLoadDemo}
+        onOpenSaved={handleLoadSaved}
+        onExportJSON={exportJSON}
+        onImportJSONClick={handleFileImportClick}
+        onReset={handleReset}
+      />
+
       {/* Top Bar */}
       <div className="sticky top-0 z-50 bg-card/90 backdrop-blur-md border-b border-border shadow-sm">
-        <div className="w-full px-4 sm:px-6 flex items-center justify-between h-14">
+        <div className="w-full px-3 sm:px-6 flex items-center justify-between h-14">
           <button
             onClick={() => navigate("/")}
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+            className="flex items-center gap-1.5 sm:gap-2 text-muted-foreground hover:text-foreground transition-colors shrink-0"
           >
             <ArrowLeft className="w-4 h-4" />
             <div className="flex items-center gap-1.5">
@@ -226,8 +248,20 @@ export default function BuilderPage() {
           </button>
 
           <div className="flex items-center gap-1.5 sm:gap-2">
-            {/* Namuna yuklash tugmalari */}
-            <div className="hidden sm:flex items-center gap-1">
+            {/* Responsivda barcha qo'shimcha amallarni bitta chiroyli modalkaga jamlash (< xl) */}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setIsActionsModalOpen(true)}
+              className="xl:hidden h-8 text-xs font-medium gap-1.5 border-border bg-card/80 hover:bg-accent px-2.5 sm:px-3 text-foreground"
+              title="Namunalar va qo'shimcha amallar"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-primary" />
+              <span className="inline">Amallar</span>
+            </Button>
+
+            {/* Katta ekranda (Desktop xl+) to'liq ko'rinuvchi amallar */}
+            <div className="hidden xl:flex items-center gap-1">
               <Button
                 size="sm"
                 variant="ghost"
@@ -250,31 +284,31 @@ export default function BuilderPage() {
               </Button>
             </div>
 
-            {/* Saqlanganlarni yuklash */}
+            {/* Saqlanganlarni yuklash (Faqat xl+) */}
             <Button
               size="sm"
               variant="ghost"
               onClick={handleLoadSaved}
-              className="text-xs h-8 text-muted-foreground hover:text-emerald-600 hidden md:flex"
+              className="text-xs h-8 text-muted-foreground hover:text-emerald-600 hidden xl:flex"
               title="Saqlangan rezyumeni tiklash"
             >
               <Save className="w-3.5 h-3.5 mr-1" />
               <span>Saqlanganlar</span>
             </Button>
 
-            {/* Zaxira yuklab olish */}
+            {/* Zaxira yuklab olish (Faqat xl+) */}
             <Button
               size="sm"
               variant="ghost"
               onClick={exportJSON}
-              className="text-xs h-8 text-muted-foreground hover:text-foreground hidden md:flex"
+              className="text-xs h-8 text-muted-foreground hover:text-foreground hidden xl:flex"
               title="CV ma'lumotlarini JSON fayl qilib yuklab olish"
             >
               <Download className="w-3.5 h-3.5 mr-1" />
               <span>Zaxira</span>
             </Button>
 
-            {/* Split Screen Toggle (Desktop) */}
+            {/* Split Screen Toggle (Desktop lg va xl+) */}
             <Button
               size="sm"
               variant={isSplitPreview ? "secondary" : "ghost"}
@@ -286,32 +320,32 @@ export default function BuilderPage() {
               <span>{isSplitPreview ? "Jonli ko'rinish" : "Bir ustun"}</span>
             </Button>
 
-            {/* Tozalash */}
+            {/* Tozalash (Faqat xl+) */}
             <Button
               size="sm"
               variant="ghost"
               onClick={handleReset}
-              className="text-muted-foreground hover:text-destructive h-8 px-2"
+              className="text-muted-foreground hover:text-destructive h-8 px-2 hidden xl:flex"
               title={t("builder.clear")}
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline ml-1 text-xs">{t("builder.clear")}</span>
+              <span className="ml-1 text-xs">{t("builder.clear")}</span>
             </Button>
 
             {/* To'liq ko'rish */}
             <Button
               size="sm"
-              className="gradient-primary text-white h-8 text-xs font-semibold px-3 shadow-sm"
+              className="gradient-primary text-white h-8 text-xs font-semibold px-2.5 sm:px-3 shadow-sm"
               onClick={() => {
                 setShowPreview(true);
                 window.scrollTo({ top: 0, behavior: "instant" });
               }}
             >
-              <Eye className="w-3.5 h-3.5 mr-1" />
-              <span>{t("builder.preview")}</span>
+              <Eye className="w-3.5 h-3.5 sm:mr-1" />
+              <span className="hidden xs:inline sm:inline">{t("builder.preview")}</span>
             </Button>
             
-            <div className="flex items-center gap-1 ml-1 border-l border-border pl-1">
+            <div className="flex items-center gap-0.5 sm:gap-1 ml-0.5 sm:ml-1 border-l border-border pl-1">
               <LanguageSwitcher />
               <ThemeToggle />
             </div>
@@ -330,13 +364,14 @@ export default function BuilderPage() {
       </div>
 
       {/* Steps Tabs */}
-      <div className="bg-card border-b border-border overflow-x-auto scrollbar-none">
-        <div className="w-full max-w-7xl mx-auto flex px-2 sm:px-6">
+      <div className="w-full max-w-full bg-card border-b border-border overflow-x-auto scrollbar-none">
+        <div className="w-max sm:w-full max-w-7xl mx-auto flex px-2 sm:px-6">
           {STEPS.map((s, i) => (
             <button
               key={s.key}
+              ref={(el) => (stepTabRefs.current[i] = el)}
               onClick={() => goToStep(i)}
-              className={`flex-1 min-w-[70px] px-2 sm:px-3 py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap text-center ${
+              className={`flex-1 min-w-[65px] sm:min-w-[70px] px-2 sm:px-3 py-2.5 sm:py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap text-center ${
                 i === step
                   ? "border-primary text-primary font-semibold"
                   : i < step
@@ -401,24 +436,28 @@ export default function BuilderPage() {
 
       {/* Bottom Nav Footer */}
       <div className="sticky bottom-0 z-40 bg-card/90 backdrop-blur-md border-t border-border">
-        <div className="w-full max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 py-3">
+        <div className="w-full max-w-7xl mx-auto flex items-center justify-between px-3 sm:px-6 py-2.5 sm:py-3">
           <Button
             variant="ghost"
+            size="sm"
             onClick={() => goToStep(Math.max(0, step - 1))}
             disabled={step === 0}
+            className="h-9 px-3 text-xs sm:text-sm"
           >
             {t("builder.back")}
           </Button>
 
-          <span className="text-xs sm:text-sm font-medium text-muted-foreground">
-            {step + 1} / {STEPS.length} — {STEPS[step].label}
+          <span className="text-xs sm:text-sm font-medium text-muted-foreground text-center px-1">
+            <span className="sm:hidden">{step + 1} / {STEPS.length}</span>
+            <span className="hidden sm:inline">{step + 1} / {STEPS.length} — {STEPS[step].label}</span>
           </span>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {step === STEPS.length - 1 && (
               <Button
                 variant="outline"
-                className="font-semibold"
+                size="sm"
+                className="font-semibold h-9 px-3 text-xs sm:text-sm border-primary/30 text-primary hover:bg-primary/5"
                 onClick={() => {
                   try {
                     // Update array of saved CVs
@@ -445,10 +484,13 @@ export default function BuilderPage() {
             )}
 
             {step < STEPS.length - 1 ? (
-              <Button onClick={() => goToStep(step + 1)}>{t("builder.next")}</Button>
+              <Button size="sm" className="h-9 px-3 text-xs sm:text-sm" onClick={() => goToStep(step + 1)}>
+                {t("builder.next")}
+              </Button>
             ) : (
               <Button
-                className="gradient-primary text-primary-foreground font-semibold"
+                size="sm"
+                className="gradient-primary text-primary-foreground font-semibold h-9 px-3 text-xs sm:text-sm"
                 onClick={() => {
                   setShowPreview(true);
                   window.scrollTo({ top: 0, behavior: "instant" });

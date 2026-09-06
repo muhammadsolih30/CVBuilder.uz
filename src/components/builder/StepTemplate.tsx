@@ -1234,41 +1234,28 @@ export default function StepTemplate({ data, onChange }: Props) {
             {COLORS.find((c) => c.key === safeColor)?.label}
           </span>
         </div>
-        {/* 12-ustunli rang grid */}
-        <div className="grid grid-cols-12 gap-1.5">
+        {/* Responsive rang grid: 6 ta mobilida, 8 ta planshetda, 12 ta desktopda */}
+        <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-2 sm:gap-1.5">
           {COLORS.map((c) => (
             <button
               key={c.key}
               type="button"
               onClick={() => onChange("accentColor", c.key)}
               title={c.label}
-              className="relative aspect-square rounded-lg transition-all duration-150 hover:scale-110 focus:outline-none"
+              className="group relative aspect-square rounded-xl sm:rounded-lg transition-all duration-150 hover:scale-105 active:scale-95 focus:outline-none flex items-center justify-center min-h-[38px] sm:min-h-0"
               style={{
                 backgroundColor: c.hex,
                 boxShadow:
                   safeColor === c.key
                     ? `0 0 0 2.5px #fff, 0 0 0 4.5px ${c.hex}`
                     : undefined,
-                transform: safeColor === c.key ? "scale(1.12)" : undefined,
+                transform: safeColor === c.key ? "scale(1.08)" : undefined,
               }}
             >
               {safeColor === c.key && (
-                <span className="absolute inset-0 flex items-center justify-center">
-                  <Check className="w-3 h-3 text-white drop-shadow" />
-                </span>
+                <Check className="w-4 h-4 text-white drop-shadow" />
               )}
             </button>
-          ))}
-        </div>
-        {/* Rang nomlari satri */}
-        <div className="grid grid-cols-12 gap-1.5 mt-1">
-          {COLORS.map((c) => (
-            <p
-              key={c.key}
-              className="text-[8px] text-center text-muted-foreground truncate leading-tight"
-            >
-              {c.label}
-            </p>
           ))}
         </div>
       </div>

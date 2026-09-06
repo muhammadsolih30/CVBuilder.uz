@@ -74,13 +74,21 @@ export default function CVScoreWidget({ data }: Props) {
 
   return (
     <div className="bg-card border border-border rounded-xl p-3 shadow-sm">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-primary" />
-          <span className="text-xs font-semibold text-foreground">CV To'liqligi & ATS</span>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
+        <div className="flex items-center justify-between sm:justify-start gap-1.5">
+          <div className="flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-primary" />
+            <span className="text-xs font-semibold text-foreground">CV To'liqligi & ATS</span>
+          </div>
+          <span className={`text-xs font-bold sm:hidden ${status.color}`}>
+            {finalScore}%
+          </span>
         </div>
-        <span className={`text-xs font-bold ${status.color}`}>
+        <span className={`text-xs font-bold hidden sm:inline ${status.color}`}>
           {finalScore}% — {status.label}
+        </span>
+        <span className={`text-[11px] font-medium sm:hidden ${status.color}`}>
+          {status.label}
         </span>
       </div>
 

@@ -201,16 +201,17 @@ export default function SmartRecommenderModal({
               </div>
 
               {/* Rasm tanlovi */}
-              <div className="pt-3 border-t border-border flex items-center justify-between">
+              <div className="pt-3 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold">Profil fotosurati bilan bo'lsinmi?</p>
                   <p className="text-xs text-muted-foreground">
                     Xalqaro AQSh/Buyuk Britaniya standartida ko'pincha rasmsiz topshiriladi
                   </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 w-full sm:w-auto">
                   <Button
                     size="sm"
+                    className="flex-1 sm:flex-none"
                     variant={answers.hasPhoto ? 'default' : 'outline'}
                     onClick={() => setAnswers(p => ({ ...p, hasPhoto: true }))}
                   >
@@ -218,6 +219,7 @@ export default function SmartRecommenderModal({
                   </Button>
                   <Button
                     size="sm"
+                    className="flex-1 sm:flex-none"
                     variant={!answers.hasPhoto ? 'default' : 'outline'}
                     onClick={() => setAnswers(p => ({ ...p, hasPhoto: false }))}
                   >

@@ -21,24 +21,34 @@ function SkillSection({ title, skills, onAdd, onUpdate, onRemove }: {
         <Button variant="ghost" size="sm" onClick={onAdd}><Plus className="w-4 h-4 mr-1" />Qo'shish</Button>
       </div>
       {skills.map(skill => (
-        <div key={skill.id} className="flex items-center gap-3">
+        <div key={skill.id} className="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-3 p-2.5 sm:p-0 bg-muted/30 sm:bg-transparent rounded-xl border sm:border-0">
           <Input
             value={skill.name}
             onChange={e => onUpdate(skill.id, 'name', e.target.value)}
             placeholder="Ko'nikma nomi"
-            className="flex-1"
+            className="flex-1 bg-card"
           />
-          <div className="w-32 flex items-center gap-2">
-            <Slider
-              value={[skill.level]}
-              onValueChange={([v]) => onUpdate(skill.id, 'level', v)}
-              min={1} max={5} step={1}
-            />
-            <span className="text-xs text-muted-foreground w-4">{skill.level}</span>
+          <div className="flex items-center justify-between sm:justify-start gap-3">
+            <div className="flex-1 sm:w-32 flex items-center gap-2">
+              <span className="text-[11px] text-muted-foreground sm:hidden">Daraja:</span>
+              <Slider
+                value={[skill.level]}
+                onValueChange={([v]) => onUpdate(skill.id, 'level', v)}
+                min={1} max={5} step={1}
+                className="flex-1"
+              />
+              <span className="text-xs font-semibold text-primary w-4 text-center">{skill.level}</span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onRemove(skill.id)}
+              className="text-muted-foreground hover:text-destructive p-1.5 h-8 w-8"
+              title="O'chirish"
+            >
+              <Trash2 className="w-4 h-4 text-destructive" />
+            </Button>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => onRemove(skill.id)}>
-            <Trash2 className="w-3.5 h-3.5 text-destructive" />
-          </Button>
         </div>
       ))}
       {skills.length === 0 && <p className="text-sm text-muted-foreground">Hali qo'shilmagan</p>}

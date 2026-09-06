@@ -38,23 +38,31 @@ export default function StepLanguages({ data, onChange }: Props) {
       )}
 
       {data.map(item => (
-        <div key={item.id} className="glass-card p-4 flex items-center gap-4">
-          <div className="flex-1">
+        <div key={item.id} className="glass-card p-4 flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-4">
+          <div className="flex-1 w-full">
             <Label className="mb-1.5 block text-sm">Til</Label>
             <Input value={item.name} onChange={e => update(item.id, 'name', e.target.value)} placeholder="O'zbek tili" />
           </div>
-          <div className="w-40">
-            <Label className="mb-1.5 block text-sm">Daraja</Label>
-            <Select value={item.level} onValueChange={v => update(item.id, 'level', v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {LEVELS.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
-              </SelectContent>
-            </Select>
+          <div className="flex items-end gap-2 w-full sm:w-auto">
+            <div className="flex-1 sm:w-44">
+              <Label className="mb-1.5 block text-sm">Daraja</Label>
+              <Select value={item.level} onValueChange={v => update(item.id, 'level', v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {LEVELS.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 text-muted-foreground hover:text-destructive flex-shrink-0"
+              onClick={() => remove(item.id)}
+              title="O'chirish"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
           </div>
-          <Button variant="ghost" size="sm" className="mt-5" onClick={() => remove(item.id)}>
-            <Trash2 className="w-4 h-4 text-destructive" />
-          </Button>
         </div>
       ))}
 
