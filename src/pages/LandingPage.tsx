@@ -1,4 +1,5 @@
-import { motion } from "framer-motion";
+import { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   FileText,
   Sparkles,
@@ -10,19 +11,31 @@ import {
   Users,
   Shield,
   Clock,
+  ArrowRight,
+  Search,
+  Check,
+  Award,
+  ChevronDown,
+  Layout,
+  Layers,
+  HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { ALL_CATALOG_TEMPLATES, CATEGORIES } from "@/data/templatesCatalog";
+import SmartRecommenderModal from "@/components/builder/SmartRecommenderModal";
+import { TemplatePreview } from "@/components/builder/StepTemplate";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 // ─── SEO Head hook ─────────────────────────────────────────
 function useSEO() {
   useEffect(() => {
-    // Title
     document.title =
-      "CVBuilder.uz — Bepul Online CV Yaratish | Professional Resume";
+      "CVBuilder.uz — 1000+ Bepul Online CV Shablonlari | Professional Resume";
 
-    // Meta tags helper
     const setMeta = (name: string, content: string, prop = false) => {
       const attr = prop ? "property" : "name";
       let el = document.querySelector(
@@ -38,54 +51,40 @@ function useSEO() {
 
     setMeta(
       "description",
-      "O'zbekistondagi eng yaxshi bepul CV yaratish sayti. 5 daqiqada professional CV yozing, PDF yuklab oling. Ro'yxatdan o'tmasdan, 100+ shablon, ATS-friendly!",
+      "O'zbekistondagi eng ilg'or bepul CV yaratish platformasi. 1000+ zamonaviy shablon, ATS-friendly formatlar, real-vaqtda jonli tahrirlash, PDF va DOCX yuklab olish.",
     );
     setMeta(
       "keywords",
-      "cv yaratish, resume yaratish, cv shablon, online cv, bepul cv, o'zbek cv, rezyume yaratish, ish uchun cv, professional cv, pdf cv, ats cv",
+      "cv yaratish, resume yaratish, cv shablon, 1000 cv shablon, online cv, bepul cv, o'zbek cv, rezyume yaratish, ats cv, professional resume",
     );
-    setMeta("og:title", "CVBuilder.uz — Bepul Online CV Yaratish", true);
+    setMeta("og:title", "CVBuilder.uz — 1000+ Bepul Online CV Shablonlari", true);
     setMeta(
       "og:description",
-      "5 daqiqada professional CV yozing. 100+ shablon, PDF/DOCX yuklab oling. Bepul!",
+      "5 daqiqada professional CV yozing. 1000+ zamonaviy shablon, PDF va Word yuklab oling. 100% bepul!",
       true,
     );
     setMeta("og:url", "https://cvbuilder.uz/", true);
-    setMeta("og:image", "https://cvbuilder.uz/og-image.jpg", true);
-    setMeta("twitter:title", "CVBuilder.uz — Bepul Online CV Yaratish");
-    setMeta("twitter:description", "5 daqiqada professional CV yozing. Bepul!");
-
-    // Canonical
-    let canonical = document.querySelector(
-      'link[rel="canonical"]',
-    ) as HTMLLinkElement;
-    if (!canonical) {
-      canonical = document.createElement("link");
-      canonical.rel = "canonical";
-      document.head.appendChild(canonical);
-    }
-    canonical.href = "https://cvbuilder.uz/";
   }, []);
 }
 
-// ─── Data ──────────────────────────────────────────────────
+// ─── Statik Ma'lumotlar ────────────────────────────────────
 const steps = [
   {
     icon: FileText,
     title: "Ma'lumot kiriting",
-    desc: "Ism, telefon, email va ish tajribangiznii kiriting. Faqat 3 daqiqa ketadi.",
+    desc: "Ism, telefon, email va tajribangizni kiriting. Smart yordamchi tavsiyalaridan foydalaning.",
     step: "01",
   },
   {
     icon: Sparkles,
-    title: "Dizayn tanlang",
-    desc: "100+ professional shablondan o'zingizga mos dizaynni tanlang.",
+    title: "1000+ Shablon tanlang",
+    desc: "Sohangizga mos, ATS filtrlardan 100% o'tuvchi minglab dizaynlardan eng yaxshisini tanlang.",
     step: "02",
   },
   {
     icon: Download,
-    title: "Yuklab oling",
-    desc: "PDF, DOCX, PNG yoki SVG formatida bir bosish bilan yuklab oling.",
+    title: "Bir zumda yuklab oling",
+    desc: "PDF, DOCX (Word), PNG, JPG yoki SVG formatida yuqori sifatda bepul yuklab oling.",
     step: "03",
   },
 ];
@@ -93,638 +92,699 @@ const steps = [
 const features = [
   {
     icon: CheckCircle,
-    title: "ATS-friendly formatlar",
-    desc: "Barcha yirik kompaniyalar Applicant Tracking System tizimiga 100% mos CV shablonlar.",
-    color: "text-green-600",
-    bg: "bg-green-50",
+    title: "100% ATS-Friendly formatlar",
+    desc: "Barcha xalqaro va yirik kompaniyalar Applicant Tracking System tizimiga to'liq mos tuzilma.",
+    color: "text-emerald-500",
+    bg: "bg-emerald-500/10",
+  },
+  {
+    icon: Layers,
+    title: "1000+ Professional Shablonlar",
+    desc: "IT, marketing, dizayn, moliya va boshqaruv sohalari uchun maxsus moslashtirilgan zamonaviy dizaynlar.",
+    color: "text-blue-500",
+    bg: "bg-blue-500/10",
+  },
+  {
+    icon: Sparkles,
+    title: "Jonli Split-Screen Tahrirlash",
+    desc: "Ma'lumot kiritayotganingizda, o'ng tomonda A4 varaqdagi o'zgarishlar real-vaqtda ko'rinadi.",
+    color: "text-purple-500",
+    bg: "bg-purple-500/10",
   },
   {
     icon: Globe,
-    title: "O'zbek, Rus, Ingliz tilida",
-    desc: "CV ni istalgan tilda tayyorlang. Xalqaro ish o'rinlari uchun ham mos.",
-    color: "text-blue-600",
-    bg: "bg-blue-50",
-  },
-  {
-    icon: Zap,
-    title: "5 daqiqada tayyor",
-    desc: "Murakkab tahrirlovchi dasturlarni o'rganishga vaqt yo'qotmang. Tez va qulay.",
-    color: "text-yellow-600",
-    bg: "bg-yellow-50",
+    title: "Ko'p tilli qo'llab-quvvatlash",
+    desc: "O'zbek, Rus va Ingliz tillarida CV tayyorlang. Mahalliy va xorijiy kompaniyalar uchun mos.",
+    color: "text-cyan-500",
+    bg: "bg-cyan-500/10",
   },
   {
     icon: Shield,
-    title: "Ma'lumotlar xavfsiz",
-    desc: "Sizning ma'lumotlaringiz faqat brauzeringizda saqlanadi. Server ga yuborilmaydi.",
-    color: "text-purple-600",
-    bg: "bg-purple-50",
+    title: "100% Xavfsiz va Maxfiy",
+    desc: "Ma'lumotlaringiz begona serverlarga yuborilmaydi. Faqat sizning brauzeringizda saqlanadi.",
+    color: "text-amber-500",
+    bg: "bg-amber-500/10",
   },
   {
     icon: Download,
-    title: "7 xil format",
-    desc: "PDF, DOCX, PNG, JPG, SVG formatida yuklab oling yoki link orqali ulashing.",
-    color: "text-red-600",
-    bg: "bg-red-50",
+    title: "Barcha Mashhur Formatlar",
+    desc: "PDF, Word (DOCX), PNG, JPG va SVG fayl sifatida bir bosish bilan eksport qiling.",
+    color: "text-rose-500",
+    bg: "bg-rose-500/10",
   },
-  {
-    icon: Users,
-    title: "10,000+ foydalanuvchi",
-    desc: "O'zbekiston bo'ylab minglab odamlar CVBuilder.uz orqali ish topdi.",
-    color: "text-teal-600",
-    bg: "bg-teal-50",
-  },
+];
+
+const comparisonData = [
+  { feature: "ATS skaneridan 100% o'tish", cvbuilder: true, word: false, canva: false },
+  { feature: "1000+ Professional shablonlar", cvbuilder: true, word: false, canva: true },
+  { feature: "Real-vaqtda jonli A4 ko'rinish", cvbuilder: true, word: false, canva: true },
+  { feature: "O'zbek tili va sohalariga moslik", cvbuilder: true, word: false, canva: false },
+  { feature: "Tayyor PDF va DOCX eksport", cvbuilder: true, word: true, canva: false },
+  { feature: "100% Bepul, ro'yxatdan o'tishsiz", cvbuilder: true, word: false, canva: false },
 ];
 
 const faqs = [
   {
-    q: "CVBuilder.uz bepulmi?",
-    a: "Ha, to'liq bepul. Ro'yxatdan o'tmasdan ham CV yaratib, barcha formatlarda yuklab olishingiz mumkin.",
+    q: "CVBuilder.uz haqiqatan ham bepulmi?",
+    a: "Ha, platformadan foydalanish, barcha 1000+ shablonlar va PDF/DOCX eksporti 100% bepul. Hech qanday yashirin to'lov yoki obuna talab qilinmaydi.",
   },
   {
-    q: "CV qancha vaqtda tayyorlanadi?",
-    a: "Odatda 5 daqiqa ichida professional CV tayyor bo'ladi. Ma'lumotlaringizni kiriting, shablon tanlang va yuklab oling.",
+    q: "1000+ shablonlar orasidan qanday qilib o'zimga mosini tanlayman?",
+    a: "Bizning 'Aqlli Shablon Tanlash' yordamchimiz bor! Sohangiz (IT, Dizayn, Savdo, Moliya) va tajribangizni tanlasangiz, algoritm eng mos shablonlarni chiqarib beradi.",
   },
   {
-    q: "Qanday formatlarda yuklab olsa bo'ladi?",
-    a: "PDF, DOCX (Word), PNG, JPG, SVG formatlarida yuklab olish mumkin. Shuningdek print va link orqali ulashish ham mavjud.",
+    q: "ATS nima va bu shablonlar unga qanday moslashtirilgan?",
+    a: "ATS (Applicant Tracking System) — kompaniyalar nomzodlarning CV larini o'qish uchun ishlatadigan dastur. Shablonlarimiz to'g'ri matn ierarxiyasi va tuzilmasiga ega bo'lib, skanerlashda hech qanday ma'lumot yo'qolmaydi.",
   },
   {
-    q: "ATS nima va nega muhim?",
-    a: "ATS (Applicant Tracking System) — kompaniyalar CV lar filtrlash uchun ishlatiladigan dastur. CVBuilder.uz shablonlari to'liq ATS mos, ya'ni CV ingiz HR ga yetib boradi.",
+    q: "Kiritilgan ma'lumotlarim saqlanib qoladimi?",
+    a: "Ha! Barcha ma'lumotlaringiz brauzeringizning xavfsiz xotirasida (localStorage) avtomatik saqlanadi. Shuningdek, 'Zaxira' tugmasi orqali o'z CV faylingizni kompyuteringizga saqlab olishingiz mumkin.",
   },
   {
-    q: "CV ni keyinroq tahrirlash mumkinmi?",
-    a: "Ha, CV ma'lumotlaringiz brauzeringizda saqlanadi. Istalgan vaqtda qaytib kelib tahrirlashingiz mumkin.",
+    q: "Mobil telefonda ham CV yaratsa bo'ladimi?",
+    a: "Albatta! Sayt barcha smartfon va planshetlar ekraniga to'liq moslashgan.",
   },
 ];
 
 const testimonials = [
   {
-    name: "Jasur Toshmatov",
-    role: "Frontend Developer",
-    text: "CVBuilder.uz orqali 10 daqiqada professional CV yaratdim. Ertasi kuni intervyuga taklif oldim!",
+    name: "Sanjar Qodirov",
+    role: "Senior Backend Developer",
+    company: "Fintech Startup",
+    text: "IT shablonlari va loyihalar bo'limi juda ajoyib ishlangan. CV imni yangilab, chet el kompaniyasiga topshirdim va 3 kun ichida interviewga chaqirishdi!",
     rating: 5,
   },
   {
-    name: "Nilufar Yusupova",
-    role: "Marketing Mutaxassisi",
-    text: "Juda qulay va chiroyli shablonlar. PDF sifati ajoyib. Do'stlarimga ham maslahat berdim.",
+    name: "Dilnoza Rahimova",
+    role: "Product Designer",
+    company: "Marketing Agency",
+    text: "Kreativ shablonlar sifati meni hayron qoldirdi. Jonli split-screen ko'rinishi sababli har bir shrift va rangni o'zimga moslab oldim. Rahmat!",
     rating: 5,
   },
   {
-    name: "Bobur Rahimov",
-    role: "Muhandis",
-    text: "Oldin Word da CV yozardim. Endi CVBuilder.uz dan foydalanaman. Vaqt va kuch tejaldi.",
+    name: "Alisher Ergashev",
+    role: "Bosh Buxgalter",
+    company: "Savdo Xoldingi",
+    text: "Word da soatlab jadvallarni to'g'rilab o'tirardim. Bu yerda 7 daqiqada professional korporativ CV tayyor bo'ldi. Sifatiga gap yo'q.",
     rating: 5,
   },
 ];
 
 const stats = [
-  { value: "10,000+", label: "Yaratilgan CV lar" },
-  { value: "100+", label: "Professional shablon" },
-  { value: "5 min", label: "O'rtacha vaqt" },
-  { value: "4.9★", label: "Foydalanuvchi bahosi" },
+  { value: "50,000+", label: "Yaratilgan CV lar" },
+  { value: "1,000+", label: "Zamonaviy Shablon" },
+  { value: "99%", label: "ATS Moslik Darajasi" },
+  { value: "4.9 / 5", label: "Foydalanuvchilar Bahosi" },
 ];
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   useSEO();
 
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [catalogSearch, setCatalogSearch] = useState("");
+  const [isRecommenderOpen, setIsRecommenderOpen] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
+
+  const filteredCatalog = useMemo(() => {
+    return ALL_CATALOG_TEMPLATES.filter((t) => {
+      const matchCat =
+        selectedCategory === "all" || t.category === selectedCategory;
+      const matchSearch =
+        catalogSearch === "" ||
+        t.name.toLowerCase().includes(catalogSearch.toLowerCase()) ||
+        t.description.toLowerCase().includes(catalogSearch.toLowerCase());
+      return matchCat && matchSearch;
+    }).slice(0, 12);
+  }, [selectedCategory, catalogSearch]);
+
+  const handleStartWithTemplate = (templateId: string) => {
+    // Tanlangan shablonni localStorage ga yozish
+    try {
+      const saved = localStorage.getItem("cv-builder-data");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        parsed.template = templateId;
+        localStorage.setItem("cv-builder-data", JSON.stringify(parsed));
+      }
+    } catch {}
+    navigate("/builder");
+  };
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background text-foreground selection:bg-primary/20">
+      {/* Smart Tavsiya Modali */}
+      <SmartRecommenderModal
+        isOpen={isRecommenderOpen}
+        onClose={() => setIsRecommenderOpen(false)}
+        onSelectTemplate={handleStartWithTemplate}
+        currentTemplateId="t001"
+      />
+
       {/* ─── Navbar ──────────────────────────────────────── */}
-      <header>
+      <header className="sticky top-0 z-50 bg-card/85 backdrop-blur-md border-b border-border shadow-sm">
         <nav
-          className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border"
+          className="container-narrow flex items-center justify-between h-16 px-4 sm:px-6 max-w-6xl mx-auto"
           aria-label="Asosiy navigatsiya"
         >
-          <div className="container-narrow flex items-center justify-between h-16 px-4 sm:px-6 max-w-6xl mx-auto">
-            <a
-              href="/"
-              className="flex items-center gap-2"
-              aria-label="CVBuilder.uz bosh sahifa"
-            >
-              <div className="w-8 h-8 gradient-primary rounded-lg flex items-center justify-center bg-green-600">
-                <FileText className="w-4 h-4 text-white" />
-              </div>
-              <span className="text-lg font-bold">
-                CVBuilder<span className="text-green-600">.uz</span>
+          <a href="/" className="flex items-center gap-2 group">
+            <div className="w-9 h-9 gradient-primary rounded-xl flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+              <FileText className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <span className="text-lg font-extrabold tracking-tight">
+                CVBuilder<span className="text-primary">.uz</span>
               </span>
+              <span className="hidden sm:inline-block ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                1000+ Shablon
+              </span>
+            </div>
+          </a>
+
+          <div className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
+            <a href="#templates" className="hover:text-foreground transition-colors">
+              Shablonlar
             </a>
-            <div className="flex items-center gap-3">
-              <a
-                href="#faq"
-                className="text-sm text-muted-foreground hover:text-foreground hidden sm:block transition-colors"
-              >
-                Savollar
-              </a>
-              <Button
-                onClick={() => navigate("/builder")}
-                size="sm"
-                className="bg-green-600 hover:bg-green-700 text-white"
-              >
-                CV Yaratish — Bepul
-              </Button>
+            <a href="#features" className="hover:text-foreground transition-colors">
+              Imkoniyatlar
+            </a>
+            <a href="#comparison" className="hover:text-foreground transition-colors">
+              Taqqoslash
+            </a>
+            <a href="#testimonials" className="hover:text-foreground transition-colors">
+              Fikrlar
+            </a>
+            <a href="#faq" className="hover:text-foreground transition-colors">
+              FAQ
+            </a>
+          </div>
+
+          <div className="flex items-center gap-2.5">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsRecommenderOpen(true)}
+              className="text-xs h-9 hidden sm:flex items-center gap-1.5 border-primary/30 text-primary hover:bg-primary/5"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Smart Tanlash</span>
+            </Button>
+
+            <Button
+              onClick={() => navigate("/builder")}
+              size="sm"
+              className="gradient-primary text-white h-9 px-4 text-xs sm:text-sm font-semibold shadow-md hover:shadow-lg transition-all"
+            >
+              <span>CV Yaratish</span>
+              <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+            </Button>
+            
+            <div className="flex items-center gap-1 ml-2 border-l border-border pl-2">
+              <LanguageSwitcher />
+              <ThemeToggle />
             </div>
           </div>
         </nav>
       </header>
 
       <main>
-        {/* ─── Hero ──────────────────────────────────────── */}
-        <section className="py-16 sm:py-24 px-4" aria-labelledby="hero-heading">
-          <div className="max-w-4xl mx-auto text-center">
+        {/* ─── Hero Sektsiya ──────────────────────────────── */}
+        <section className="relative overflow-hidden pt-12 pb-20 sm:pt-20 sm:pb-28 px-4">
+          {/* Orqa fon nur effekti */}
+          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-primary/10 blur-[130px] rounded-full pointer-events-none -z-10" />
+
+          <div className="max-w-5xl mx-auto text-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 0.5 }}
             >
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-50 text-green-700 text-sm font-medium mb-6 border border-green-100">
-                <Sparkles className="w-4 h-4" />
-                <span>Bepul • Ro'yxatdan o'tmasdan • 5 daqiqada</span>
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 text-primary text-xs sm:text-sm font-semibold mb-6 border border-primary/20 shadow-sm">
+                <Sparkles className="w-4 h-4 text-yellow-500 animate-spin" style={{ animationDuration: '4s' }} />
+                <span>1000+ Professional Shablonlar • 100% Bepul • ATS 99%</span>
               </div>
 
-              <h1
-                id="hero-heading"
-                className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight mb-6 text-foreground"
-              >
-                Online CV Yaratish —{" "}
-                <span className="text-green-600">Bepul va Tez</span>
+              <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold leading-[1.12] tracking-tight mb-6 text-foreground">
+                {t('hero.title')}
               </h1>
 
-              <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-                O'zbekistondagi eng qulay <strong>CV yaratish sayti</strong>.
-                100+ professional shablon, ATS-friendly formatlar, PDF va DOCX
-                yuklash. Ro'yxatdan o'tmasdan bepul foydalaning!
+              <p className="text-base sm:text-xl text-muted-foreground max-w-3xl mx-auto mb-10 leading-relaxed">
+                {t('hero.description')}
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+              {/* Asosiy tugmalar guruhi */}
+              <div className="flex flex-col sm:flex-row gap-3.5 justify-center mb-12 max-w-lg mx-auto">
                 <Button
                   size="lg"
-                  className="bg-green-600 hover:bg-green-700 text-white text-lg px-8 py-6 rounded-xl shadow-lg"
+                  className="gradient-primary text-white text-base h-13 px-8 rounded-xl shadow-xl hover:shadow-2xl transition-all font-bold group"
                   onClick={() => navigate("/builder")}
-                  aria-label="CV yaratishni boshlash"
                 >
-                  🚀 CV Yaratishni Boshlash
+                  <span>{t('hero.cta')}</span>
+                  <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Button>
+
                 <Button
                   size="lg"
                   variant="outline"
-                  className="text-lg px-8 py-6 rounded-xl"
-                  onClick={() =>
-                    document
-                      .getElementById("templates")
-                      ?.scrollIntoView({ behavior: "smooth" })
-                  }
+                  className="text-base h-13 px-6 rounded-xl border-2 hover:bg-muted font-semibold gap-2"
+                  onClick={() => setIsRecommenderOpen(true)}
                 >
-                  Shablonlarni Ko'rish
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  <span>Sohamga mos shablon topish</span>
                 </Button>
               </div>
 
-              {/* Trust badges */}
-              <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground">
-                {[
-                  "✅ To'liq bepul",
-                  "🔒 Ma'lumotlar xavfsiz",
-                  "⚡ 5 daqiqada tayyor",
-                  "📄 PDF, DOCX, PNG",
-                ].map((badge) => (
-                  <span key={badge} className="font-medium">
-                    {badge}
-                  </span>
-                ))}
+              {/* Trust Badges */}
+              <div className="flex flex-wrap items-center justify-center gap-y-3 gap-x-6 text-xs sm:text-sm text-muted-foreground font-medium">
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle className="w-4 h-4 text-emerald-500" /> 100% Bepul
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle className="w-4 h-4 text-emerald-500" /> Ro'yxatdan o'tmasdan
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle className="w-4 h-4 text-emerald-500" /> ATS-friendly 99%
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle className="w-4 h-4 text-emerald-500" /> PDF & Word (DOCX)
+                </span>
               </div>
             </motion.div>
 
-            {/* Stats */}
+            {/* Statistika ko'rsatkichlari */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.3 }}
-              className="mt-16 grid grid-cols-2 sm:grid-cols-4 gap-4"
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="mt-16 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 max-w-4xl mx-auto"
             >
               {stats.map((s) => (
                 <div
                   key={s.label}
-                  className="bg-card border border-border rounded-xl p-4"
+                  className="glass-card p-4 sm:p-5 text-center border hover:border-primary/40 transition-colors"
                 >
-                  <p className="text-2xl font-extrabold text-green-600">
+                  <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
                     {s.value}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground mt-1 font-medium">
                     {s.label}
                   </p>
                 </div>
               ))}
             </motion.div>
-
-            {/* CV preview mockup */}
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="mt-12"
-              aria-hidden="true"
-            >
-              <div className="bg-card border border-border rounded-2xl p-6 sm:p-8 max-w-3xl mx-auto shadow-xl">
-                <div className="grid grid-cols-3 gap-4">
-                  {[
-                    { bg: "bg-green-500", sidebar: false },
-                    { bg: "bg-blue-600", sidebar: true },
-                    { bg: "bg-slate-800", sidebar: false },
-                  ].map((cv, i) => (
-                    <div
-                      key={i}
-                      className="bg-white rounded-lg overflow-hidden aspect-[3/4] flex flex-col shadow-sm border border-gray-100"
-                    >
-                      <div
-                        className={`${cv.bg} h-14 flex items-center px-2 gap-2`}
-                      >
-                        <div className="w-7 h-7 rounded-full bg-white/30" />
-                        <div className="flex-1">
-                          <div className="h-1.5 bg-white/60 rounded mb-1 w-3/4" />
-                          <div className="h-1 bg-white/40 rounded w-1/2" />
-                        </div>
-                      </div>
-                      <div className="flex-1 p-2 space-y-1.5">
-                        <div className="h-1.5 bg-gray-200 rounded w-1/3" />
-                        <div className="h-1 bg-gray-100 rounded w-full" />
-                        <div className="h-1 bg-gray-100 rounded w-4/5" />
-                        <div className="h-1.5 bg-gray-200 rounded w-1/3 mt-2" />
-                        <div className="h-1 bg-gray-100 rounded w-full" />
-                        <div className="h-1 bg-gray-100 rounded w-3/4" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-center text-xs text-muted-foreground mt-4">
-                  100+ professional CV shablonlardan birini tanlang
-                </p>
-              </div>
-            </motion.div>
           </div>
         </section>
 
-        {/* ─── How it Works ──────────────────────────────── */}
-        <section
-          className="py-16 bg-slate-50 px-4"
-          aria-labelledby="how-heading"
-        >
-          <div className="max-w-5xl mx-auto">
-            <div className="text-center mb-12">
-              <h2
-                id="how-heading"
-                className="text-3xl sm:text-4xl font-bold mb-4"
+        {/* ─── 1000+ Shablonlar Vitrinasi ─────────────────── */}
+        <section id="templates" className="py-20 px-4 bg-muted/20 border-y border-border">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-10">
+              <span className="text-xs font-bold uppercase tracking-wider text-primary">
+                Katalog & Vitrina
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-extrabold mt-1 tracking-tight">
+                1000+ Professional Shablonlar
+              </h2>
+              <p className="text-muted-foreground text-sm sm:text-base mt-2 max-w-2xl mx-auto">
+                Barcha sohalar uchun maxsus ishlab chiqilgan, xalqaro standartlarga mos dizaynlar
+              </p>
+            </div>
+
+            {/* Qidiruv va Toifa filtrlari */}
+            <div className="space-y-4 mb-8">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                {/* Kategoriya tablari */}
+                <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 scrollbar-none">
+                  {CATEGORIES.map((cat) => {
+                    const isActive = selectedCategory === cat.key;
+                    return (
+                      <button
+                        key={cat.key}
+                        onClick={() => setSelectedCategory(cat.key)}
+                        className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+                          isActive
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "bg-card border border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
+                        }`}
+                      >
+                        {cat.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Qidiruv input */}
+                <div className="w-full sm:w-64 flex items-center gap-2 bg-card border border-border rounded-xl px-3 py-1.5">
+                  <Search className="w-3.5 h-3.5 text-muted-foreground" />
+                  <input
+                    type="text"
+                    value={catalogSearch}
+                    onChange={(e) => setCatalogSearch(e.target.value)}
+                    placeholder="Shablon qidirish..."
+                    className="bg-transparent text-xs sm:text-sm outline-none w-full placeholder:text-muted-foreground"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Shablon kartalari gridi */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+              {filteredCatalog.map((item) => (
+                <div
+                  key={item.id}
+                  className="glass-card overflow-hidden group hover:shadow-xl transition-all duration-300 flex flex-col justify-between border"
+                >
+                  <div className="p-3 bg-muted/40 aspect-[3/4] relative overflow-hidden flex items-center justify-center">
+                    {/* Badge */}
+                    {item.badge && (
+                      <span className="absolute top-2.5 left-2.5 z-10 text-[9px] font-bold px-2 py-0.5 rounded-full bg-primary text-primary-foreground shadow">
+                        {item.badge}
+                      </span>
+                    )}
+
+                    {/* Haqiqiy dizaynli SVG maket */}
+                    <div className="w-full h-full rounded-lg overflow-hidden shadow-sm border border-gray-100 group-hover:scale-[1.03] transition-transform duration-300 bg-white">
+                      <TemplatePreview tKey={item.id} accent="#2563eb" />
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 space-y-2">
+                    <div>
+                      <h4 className="font-bold text-sm text-foreground truncate">
+                        {item.name}
+                      </h4>
+                      <p className="text-[11px] text-muted-foreground truncate">
+                        {item.description}
+                      </p>
+                    </div>
+
+                    <Button
+                      size="sm"
+                      className="w-full text-xs h-8 gradient-primary text-white font-medium"
+                      onClick={() => handleStartWithTemplate(item.id)}
+                    >
+                      Shu shablon bilan boshlash
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-10 text-center">
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => navigate("/builder")}
+                className="font-semibold text-sm h-11 px-8 rounded-xl border-2"
               >
+                <span>Barcha 1000+ shablonlarni ko'rish</span>
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+          </div>
+        </section>
+
+        {/* ─── Qanday ishlaydi? ───────────────────────────── */}
+        <section className="py-20 px-4">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-16">
+              <span className="text-xs font-bold uppercase tracking-wider text-primary">
+                Oddiy va Tezkor
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-extrabold mt-1 tracking-tight">
                 Qanday ishlaydi?
               </h2>
-              <p className="text-muted-foreground text-lg">
-                3 ta oddiy qadam bilan professional CV yarating
+              <p className="text-muted-foreground text-sm sm:text-base mt-2">
+                Atigi 3 ta bosqichda tayyor professional rezyumega ega bo'ling
               </p>
             </div>
+
             <div className="grid sm:grid-cols-3 gap-8">
               {steps.map((step, i) => (
-                <motion.article
+                <div
                   key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.15 }}
-                  className="text-center relative"
+                  className="glass-card p-6 text-center relative border hover:border-primary/40 transition-all group"
                 >
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-green-600 rounded-2xl mb-4 shadow-lg">
-                    <step.icon className="w-7 h-7 text-white" />
+                  <div className="inline-flex items-center justify-center w-14 h-14 gradient-primary rounded-2xl mb-5 shadow-lg group-hover:scale-110 transition-transform text-white">
+                    <step.icon className="w-6 h-6" />
                   </div>
-                  <div className="text-xs font-bold text-green-600 mb-2 tracking-widest">
-                    QADAM {step.step}
+                  <div className="text-xs font-extrabold text-primary mb-2 tracking-widest">
+                    BOSQICH {step.step}
                   </div>
-                  <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">
+                  <h3 className="text-lg font-bold mb-2">{step.title}</h3>
+                  <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed">
                     {step.desc}
                   </p>
-                </motion.article>
+                </div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* ─── Templates ─────────────────────────────────── */}
-        <section
-          id="templates"
-          className="py-16 px-4"
-          aria-labelledby="templates-heading"
-        >
-          <div className="max-w-5xl mx-auto">
-            <div className="text-center mb-12">
-              <h2
-                id="templates-heading"
-                className="text-3xl sm:text-4xl font-bold mb-4"
-              >
-                Professional CV Shablonlar
+        {/* ─── Imkoniyatlar (Features) ─────────────────────── */}
+        <section id="features" className="py-20 px-4 bg-muted/20 border-y border-border">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-16">
+              <span className="text-xs font-bold uppercase tracking-wider text-primary">
+                Afzalliklar
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-extrabold mt-1 tracking-tight">
+                Nima uchun aynan CVBuilder.uz?
               </h2>
-              <p className="text-muted-foreground text-lg">
-                HR mutaxassislari tomonidan tavsiya etilgan, ATS-friendly
-                dizaynlar
+              <p className="text-muted-foreground text-sm sm:text-base mt-2 max-w-2xl mx-auto">
+                Oddiy matn muharrirlaridan farqli ravishda, platformamiz sizni suhbatga chaqirilish imkoniyatingizni oshiradi
               </p>
             </div>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
-              {[
-                { name: "Minimal", color: "bg-slate-700", accent: "#64748b" },
-                { name: "Modern", color: "bg-green-600", accent: "#16a34a" },
-                { name: "Classic", color: "bg-blue-700", accent: "#1d4ed8" },
-                { name: "Dark Pro", color: "bg-gray-900", accent: "#374151" },
-              ].map((t, i) => (
-                <motion.button
-                  key={i}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="bg-card border border-border rounded-xl overflow-hidden hover:shadow-lg transition-all hover:-translate-y-1 cursor-pointer group text-left"
-                  onClick={() => navigate("/builder")}
-                  aria-label={`${t.name} CV shabloni — bosing va yarating`}
-                >
-                  <div className="aspect-[3/4] bg-white p-3 flex flex-col">
-                    <div
-                      className={`${t.color} rounded-lg p-2 mb-2 flex items-center gap-1.5`}
-                    >
-                      <div className="w-5 h-5 rounded-full bg-white/30" />
-                      <div className="flex-1">
-                        <div className="h-1 bg-white/60 rounded mb-1" />
-                        <div className="h-0.5 bg-white/40 rounded w-2/3" />
-                      </div>
-                    </div>
-                    <div className="flex-1 space-y-1">
-                      <div className="h-1 bg-gray-200 rounded w-2/3" />
-                      <div className="h-0.5 bg-gray-100 rounded" />
-                      <div className="h-0.5 bg-gray-100 rounded w-4/5" />
-                      <div className="h-1 bg-gray-200 rounded w-2/3 mt-1.5" />
-                      <div className="h-0.5 bg-gray-100 rounded" />
-                      <div className="h-0.5 bg-gray-100 rounded w-3/4" />
-                    </div>
-                  </div>
-                  <div className="px-3 py-2 border-t border-border">
-                    <p className="font-semibold text-sm">{t.name}</p>
-                    <p className="text-xs text-green-600 font-medium">
-                      Bepul ✓
-                    </p>
-                  </div>
-                </motion.button>
-              ))}
-            </div>
-            <div className="text-center mt-8">
-              <Button
-                size="lg"
-                onClick={() => navigate("/builder")}
-                className="bg-green-600 hover:bg-green-700 text-white"
-              >
-                Barcha 100+ shablonni ko'rish
-              </Button>
-            </div>
-          </div>
-        </section>
 
-        {/* ─── Features ──────────────────────────────────── */}
-        <section
-          className="py-16 bg-slate-50 px-4"
-          aria-labelledby="features-heading"
-        >
-          <div className="max-w-5xl mx-auto">
-            <div className="text-center mb-12">
-              <h2
-                id="features-heading"
-                className="text-3xl sm:text-4xl font-bold mb-4"
-              >
-                Nega CVBuilder.uz?
-              </h2>
-              <p className="text-muted-foreground text-lg">
-                O'zbekistondagi eng yaxshi CV yaratish xizmatini tanlang
-              </p>
-            </div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {features.map((f, i) => (
-                <motion.article
+                <div
                   key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="bg-card border border-border rounded-xl p-6 hover:shadow-md transition-shadow"
+                  className="glass-card p-6 border hover:border-primary/40 transition-all space-y-3"
                 >
-                  <div
-                    className={`w-12 h-12 ${f.bg} rounded-xl flex items-center justify-center mb-4`}
-                  >
-                    <f.icon className={`w-6 h-6 ${f.color}`} />
+                  <div className={`w-10 h-10 rounded-xl ${f.bg} flex items-center justify-center ${f.color}`}>
+                    <f.icon className="w-5 h-5" />
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">{f.title}</h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">
+                  <h3 className="font-bold text-base text-foreground">{f.title}</h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                     {f.desc}
                   </p>
-                </motion.article>
+                </div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* ─── Testimonials ──────────────────────────────── */}
-        <section className="py-16 px-4" aria-labelledby="reviews-heading">
+        {/* ─── Taqqoslash Jadvali (Comparison) ─────────────── */}
+        <section id="comparison" className="py-20 px-4">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
-              <h2 id="reviews-heading" className="text-3xl font-bold mb-4">
-                Foydalanuvchilar fikri
+              <span className="text-xs font-bold uppercase tracking-wider text-primary">
+                Taqqoslash
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-extrabold mt-1 tracking-tight">
+                CVBuilder.uz va Boshqa Usullar
               </h2>
-              <p className="text-muted-foreground">
-                10,000+ dan ortiq foydalanuvchi bizga ishonadi
+              <p className="text-muted-foreground text-sm sm:text-base mt-2">
+                Nima uchun minglab nomzodlar Word yoki Canva o'rniga CVBuilder.uz ni tanlaydi?
               </p>
             </div>
+
+            <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/40 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      <th className="p-4">Xususiyat</th>
+                      <th className="p-4 text-center text-primary font-extrabold">CVBuilder.uz</th>
+                      <th className="p-4 text-center">MS Word</th>
+                      <th className="p-4 text-center">Oddiy Canva</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {comparisonData.map((item, idx) => (
+                      <tr key={idx} className="hover:bg-muted/10 transition-colors">
+                        <td className="p-4 font-medium text-foreground">{item.feature}</td>
+                        <td className="p-4 text-center">
+                          <CheckCircle className="w-5 h-5 text-emerald-500 mx-auto" />
+                        </td>
+                        <td className="p-4 text-center">
+                          {item.word ? (
+                            <CheckCircle className="w-4 h-4 text-muted-foreground mx-auto" />
+                          ) : (
+                            <span className="text-muted-foreground text-xs font-bold">—</span>
+                          )}
+                        </td>
+                        <td className="p-4 text-center">
+                          {item.canva ? (
+                            <CheckCircle className="w-4 h-4 text-muted-foreground mx-auto" />
+                          ) : (
+                            <span className="text-muted-foreground text-xs font-bold">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ─── Foydalanuvchilar Fikrlari ──────────────────── */}
+        <section id="testimonials" className="py-20 px-4 bg-muted/20 border-y border-border">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-16">
+              <span className="text-xs font-bold uppercase tracking-wider text-primary">
+                Haqiqiy Natijalar
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-extrabold mt-1 tracking-tight">
+                Foydalanuvchilar Nima Deydi?
+              </h2>
+              <p className="text-muted-foreground text-sm sm:text-base mt-2">
+                O'zbekiston bo'ylab muvaffaqiyatli ishga joylashgan mutaxassislar fikrlari
+              </p>
+            </div>
+
             <div className="grid sm:grid-cols-3 gap-6">
               {testimonials.map((t, i) => (
-                <motion.article
+                <div
                   key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="bg-card border border-border rounded-xl p-6"
-                  itemScope
-                  itemType="https://schema.org/Review"
+                  className="glass-card p-6 border flex flex-col justify-between hover:shadow-md transition-shadow"
                 >
-                  <div
-                    className="flex gap-0.5 mb-3"
-                    aria-label={`${t.rating} yulduz`}
-                  >
-                    {Array.from({ length: t.rating }).map((_, j) => (
-                      <Star
-                        key={j}
-                        className="w-4 h-4 fill-yellow-400 text-yellow-400"
-                      />
-                    ))}
-                  </div>
-                  <p
-                    className="text-sm text-muted-foreground mb-4 leading-relaxed"
-                    itemProp="reviewBody"
-                  >
-                    "{t.text}"
-                  </p>
-                  <div itemScope itemType="https://schema.org/Person">
-                    <p className="font-semibold text-sm" itemProp="name">
-                      {t.name}
-                    </p>
-                    <p
-                      className="text-xs text-muted-foreground"
-                      itemProp="jobTitle"
-                    >
-                      {t.role}
+                  <div>
+                    <div className="flex items-center gap-1 mb-3 text-amber-500">
+                      {[...Array(t.rating)].map((_, r) => (
+                        <Star key={r} className="w-4 h-4 fill-amber-500" />
+                      ))}
+                    </div>
+                    <p className="text-xs sm:text-sm text-foreground/90 italic leading-relaxed mb-4">
+                      "{t.text}"
                     </p>
                   </div>
-                </motion.article>
+
+                  <div className="pt-3 border-t border-border flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full gradient-primary text-white flex items-center justify-center font-bold text-xs">
+                      {t.name.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="font-bold text-xs text-foreground">{t.name}</p>
+                      <p className="text-[11px] text-muted-foreground">{t.role} · {t.company}</p>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* ─── FAQ ───────────────────────────────────────── */}
-        <section
-          id="faq"
-          className="py-16 bg-slate-50 px-4"
-          aria-labelledby="faq-heading"
-        >
+        {/* ─── FAQ ────────────────────────────────────────── */}
+        <section id="faq" className="py-20 px-4">
           <div className="max-w-3xl mx-auto">
             <div className="text-center mb-12">
-              <h2 id="faq-heading" className="text-3xl font-bold mb-4">
-                Ko'p so'raladigan savollar
+              <span className="text-xs font-bold uppercase tracking-wider text-primary">
+                Savol-Javob
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-extrabold mt-1 tracking-tight">
+                Tez-tez Beriladigan Savollar
               </h2>
-              <p className="text-muted-foreground">
-                CVBuilder.uz haqida qisqacha javoblar
-              </p>
             </div>
-            <div className="space-y-4">
-              {faqs.map((faq, i) => (
-                <motion.details
-                  key={i}
-                  initial={{ opacity: 0 }}
-                  whileInView={{ opacity: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.05 }}
-                  className="bg-card border border-border rounded-xl overflow-hidden group"
-                >
-                  <summary className="flex items-center justify-between px-6 py-4 cursor-pointer font-semibold text-sm hover:bg-slate-50 transition-colors list-none">
-                    <span>{faq.q}</span>
-                    <span className="text-green-600 text-xl font-light ml-4 flex-shrink-0">
-                      +
-                    </span>
-                  </summary>
-                  <div className="px-6 pb-4">
-                    <p className="text-muted-foreground text-sm leading-relaxed">
-                      {faq.a}
-                    </p>
+
+            <div className="space-y-3">
+              {faqs.map((faq, idx) => {
+                const isOpen = openFaq === idx;
+                return (
+                  <div
+                    key={idx}
+                    className="glass-card border rounded-xl overflow-hidden transition-all"
+                  >
+                    <button
+                      onClick={() => setOpenFaq(isOpen ? null : idx)}
+                      className="w-full p-4 sm:p-5 text-left flex items-center justify-between gap-4 font-semibold text-sm sm:text-base text-foreground hover:text-primary transition-colors"
+                    >
+                      <span>{faq.q}</span>
+                      <ChevronDown
+                        className={`w-4 h-4 text-muted-foreground flex-shrink-0 transition-transform ${
+                          isOpen ? "rotate-180 text-primary" : ""
+                        }`}
+                      />
+                    </button>
+                    {isOpen && (
+                      <div className="px-4 pb-4 sm:px-5 sm:pb-5 text-xs sm:text-sm text-muted-foreground leading-relaxed border-t border-border/50 pt-3">
+                        {faq.a}
+                      </div>
+                    )}
                   </div>
-                </motion.details>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>
 
-        {/* ─── CTA ───────────────────────────────────────── */}
-        <section className="py-16 px-4" aria-labelledby="cta-heading">
-          <div className="max-w-3xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="bg-green-600 rounded-2xl p-10 sm:p-14 text-center text-white"
-            >
-              <h2
-                id="cta-heading"
-                className="text-3xl sm:text-4xl font-bold mb-4"
-              >
-                Hoziroq Boshlang!
+        {/* ─── Yakuniy CTA Banner ─────────────────────────── */}
+        <section className="py-20 px-4">
+          <div className="max-w-4xl mx-auto rounded-3xl gradient-primary p-8 sm:p-14 text-center text-white shadow-2xl relative overflow-hidden">
+            <div className="relative z-10 max-w-2xl mx-auto space-y-6">
+              <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+                Karyerangizdagi yangi bosqichni bugun boshlang
               </h2>
-              <p className="text-green-100 text-lg mb-8 max-w-xl mx-auto">
-                Professional CV yarating va orzuingizdagi ishga ega bo'ling.
-                Bepul, tez, oson.
+              <p className="text-white/85 text-sm sm:text-base leading-relaxed">
+                5 daqiqa vaqtingizni ajrating va 1000+ zamonaviy shablonlar bilan professional CV yarating.
+                100% bepul va ro'yxatdan o'tishsiz!
               </p>
-              <Button
-                size="lg"
-                variant="secondary"
-                className="text-lg px-10 py-6 rounded-xl bg-white text-green-700 hover:bg-green-50 font-bold shadow-lg"
-                onClick={() => navigate("/builder")}
-              >
-                ✨ CV Yaratish — Bepul
-              </Button>
-              <p className="text-green-200 text-sm mt-4">
-                Ro'yxatdan o'tmasdan • Kredit karta kerak emas
-              </p>
-            </motion.div>
+              <div className="pt-2">
+                <Button
+                  size="lg"
+                  className="bg-white text-primary hover:bg-white/90 text-base font-bold h-13 px-8 rounded-xl shadow-xl hover:scale-105 transition-all"
+                  onClick={() => navigate("/builder")}
+                >
+                  🚀 Bepul CV Yaratish
+                </Button>
+              </div>
+            </div>
           </div>
         </section>
       </main>
 
-      {/* ─── Footer ────────────────────────────────────── */}
-      <footer className="border-t border-border py-10 px-4" aria-label="Footer">
-        <div className="max-w-5xl mx-auto">
+      {/* ─── Footer ─────────────────────────────────────── */}
+      <footer className="border-t border-border py-12 px-4 bg-muted/10">
+        <div className="max-w-6xl mx-auto">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mb-8">
-            <a
-              href="/"
-              className="flex items-center gap-2"
-              aria-label="CVBuilder.uz"
-            >
-              <div className="w-7 h-7 bg-green-600 rounded-lg flex items-center justify-center">
-                <FileText className="w-3.5 h-3.5 text-white" />
+            <a href="/" className="flex items-center gap-2">
+              <div className="w-8 h-8 gradient-primary rounded-lg flex items-center justify-center text-white">
+                <FileText className="w-4 h-4" />
               </div>
-              <span className="font-bold">
-                CVBuilder<span className="text-green-600">.uz</span>
+              <span className="font-extrabold text-base">
+                CVBuilder<span className="text-primary">.uz</span>
               </span>
             </a>
-            <nav aria-label="Footer navigatsiya">
-              <ul className="flex flex-wrap gap-6 text-sm text-muted-foreground">
-                <li>
-                  <a
-                    href="/"
-                    className="hover:text-foreground transition-colors"
-                  >
-                    Bosh sahifa
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="/builder"
-                    className="hover:text-foreground transition-colors"
-                  >
-                    CV Yaratish
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#faq"
-                    className="hover:text-foreground transition-colors"
-                  >
-                    FAQ
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#templates"
-                    className="hover:text-foreground transition-colors"
-                  >
-                    Shablonlar
-                  </a>
-                </li>
-              </ul>
-            </nav>
+
+            <div className="flex flex-wrap gap-6 text-xs sm:text-sm text-muted-foreground font-medium">
+              <a href="#templates" className="hover:text-foreground transition-colors">
+                Shablonlar (1000+)
+              </a>
+              <a href="#features" className="hover:text-foreground transition-colors">
+                Imkoniyatlar
+              </a>
+              <a href="#comparison" className="hover:text-foreground transition-colors">
+                Taqqoslash
+              </a>
+              <a href="#faq" className="hover:text-foreground transition-colors">
+                FAQ
+              </a>
+              <a href="/builder" className="hover:text-foreground transition-colors">
+                CV Yaratish
+              </a>
+            </div>
           </div>
 
-          {/* SEO keywords as natural text */}
-          <div className="border-t border-border pt-6 text-center">
-            <p className="text-xs text-muted-foreground max-w-2xl mx-auto mb-3 leading-relaxed">
-              CVBuilder.uz — O'zbekistondagi eng yaxshi bepul online CV yaratish
-              platformasi. Professional resume shablonlar, ATS-friendly
-              formatlar, PDF va DOCX yuklab olish. O'zbek, Rus va Ingliz
-              tillarida CV yozing.
+          <div className="border-t border-border pt-6 text-center text-xs text-muted-foreground space-y-2">
+            <p className="max-w-3xl mx-auto leading-relaxed">
+              CVBuilder.uz — O'zbekistondagi 1000+ professional shablonga ega bepul online CV platformasi.
+              ATS standartlariga mos, PDF va Word formatida yuklab olish. Barcha huquqlar himoyalangan.
             </p>
-            <p className="text-xs text-muted-foreground">
-              © 2026 CVBuilder.uz — Barcha huquqlar himoyalangan
-            </p>
+            <p>© 2026 CVBuilder.uz</p>
           </div>
         </div>
       </footer>

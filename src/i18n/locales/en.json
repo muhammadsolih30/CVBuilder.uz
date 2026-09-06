@@ -1,0 +1,40 @@
+{
+  "hero": {
+    "title": "Professional CV Builder",
+    "subtitle": "Take your career to the next level",
+    "cta": "Create Now for Free",
+    "description": "The most advanced CV platform in Uzbekistan. More than 1000 professional templates, real-time split-screen editing, and instant PDF/Word downloads."
+  },
+  "builder": {
+    "title": "CV Builder",
+    "preview": "Preview",
+    "back": "Back",
+    "next": "Next",
+    "save": "Save CV",
+    "saveSuccess": "CV saved successfully!",
+    "clear": "Clear",
+    "download": "Download",
+    "edit": "Edit",
+    "steps": {
+      "personal": "Personal Info",
+      "work": "Work Experience",
+      "education": "Education",
+      "skills": "Skills",
+      "languages": "Languages",
+      "projects": "Projects",
+      "certificates": "Certificates",
+      "template": "Design"
+    }
+  },
+  "cv": {
+    "profile": "PROFILE",
+    "work": "WORK EXPERIENCE",
+    "education": "EDUCATION",
+    "skills": "SKILLS",
+    "languages": "LANGUAGES",
+    "projects": "PROJECTS",
+    "certificates": "CERTIFICATES & COURSES",
+    "contact": "CONTACT",
+    "present": "Present"
+  }
+}

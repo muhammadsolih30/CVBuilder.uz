@@ -1,0 +1,40 @@
+{
+  "hero": {
+    "title": "Professional CV Yaratuvchi",
+    "subtitle": "Karyerangizni yangi bosqichga olib chiqing",
+    "cta": "Hoziroq Bepul Boshlash",
+    "description": "O'zbekistondagi eng zamonaviy CV platformasi. 1000 dan ortiq professional shablon, real-vaqtda jonli tahrirlash (Split-screen) va bir zumda PDF/Word yuklab olish."
+  },
+  "builder": {
+    "title": "CV Builder",
+    "preview": "Ko'rish",
+    "back": "Ortga",
+    "next": "Keyingisi",
+    "save": "Saqlash",
+    "saveSuccess": "CV muvaffaqiyatli saqlandi!",
+    "clear": "Tozalash",
+    "download": "Yuklash",
+    "edit": "Tahrirlash",
+    "steps": {
+      "personal": "Shaxsiy ma'lumotlar",
+      "work": "Ish tajribasi",
+      "education": "Ta'lim",
+      "skills": "Ko'nikmalar",
+      "languages": "Tillar",
+      "projects": "Loyihalar",
+      "certificates": "Sertifikatlar",
+      "template": "Dizayn"
+    }
+  },
+  "cv": {
+    "profile": "PROFIL",
+    "work": "ISH TAJRIBASI",
+    "education": "TA'LIM",
+    "skills": "KO'NIKMALAR",
+    "languages": "TILLAR",
+    "projects": "LOYIHALAR",
+    "certificates": "SERTIFIKATLAR VA KURSLAR",
+    "contact": "KONTAKT",
+    "present": "Hozir"
+  }
+}

@@ -1,4 +1,5 @@
 import React, { useRef, useState, useLayoutEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { CVData } from "@/types/cv";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,7 +17,9 @@ import {
 
 interface Props {
   data: CVData;
-  onBack: () => void;
+  onBack?: () => void;
+  inline?: boolean;
+  onExpand?: () => void;
 }
 
 // ─── 24 ta rang (StepTemplate bilan AYNAN MOS) ─────────────
@@ -274,6 +277,35 @@ function resolveConfig(templateKey: string, accentHex: string): TplConfig {
     };
   }
 
+  // t101–t1024 (1000+ kengaytirilgan shablonlar)
+  if (idx >= 101 && idx <= 1024) {
+    const layoutPool: LayoutType[] = [
+      "minimal-clean",
+      "header-full",
+      "sidebar-left",
+      "dark-sidebar",
+      "left-stripe",
+      "double-bar",
+      "corner",
+      "side-right",
+      "top-bar",
+      "minimal",
+      "centered",
+    ];
+    const chosenLayout = layoutPool[idx % layoutPool.length];
+    const isDark = chosenLayout === "dark-sidebar" || idx % 11 === 0;
+    const bgColors = ["#ffffff", "#f8fafc", "#fdfbf7", "#f8f9fa", "#0f172a"];
+    const chosenBg = isDark ? "#0f172a" : bgColors[idx % (bgColors.length - 1)];
+
+    return {
+      layout: chosenLayout,
+      pageBg: chosenBg,
+      headerColor: accentHex,
+      dark: isDark,
+      accentHex,
+    };
+  }
+
   return {
     layout: "minimal-clean",
     pageBg: "#ffffff",
@@ -288,6 +320,7 @@ function CvScaleWrapper({ children }: { children: React.ReactNode }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  const [contentHeight, setContentHeight] = useState(297 * 3.7795);
 
   useLayoutEffect(() => {
     function update() {
@@ -301,11 +334,18 @@ function CvScaleWrapper({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("resize", update);
   }, []);
 
-  // Scaled CV haqiqiy balandligi: 297mm * scale
-  // Shu qiymatni wrapper ga beramiz — scroll to'g'ri ishlaydi
-  const CV_HEIGHT_MM = 297;
-  const CV_HEIGHT_PX = CV_HEIGHT_MM * 3.7795; // 1mm = 3.7795px
-  const scaledHeight = CV_HEIGHT_PX * scale;
+  useLayoutEffect(() => {
+    if (!innerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContentHeight(Math.max(297 * 3.7795, entry.contentRect.height));
+      }
+    });
+    observer.observe(innerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  const scaledHeight = contentHeight * scale;
 
   return (
     <div
@@ -314,7 +354,6 @@ function CvScaleWrapper({ children }: { children: React.ReactNode }) {
         width: "100%",
         display: "flex",
         justifyContent: "center",
-        // Wrapper balandligi — scaled CV balandligiga teng (+ oz padding)
         minHeight: scaledHeight + 32,
         paddingTop: 16,
         paddingBottom: 16,
@@ -338,7 +377,13 @@ function CvScaleWrapper({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function CVPreview({ data, onBack }: Props) {
+export default function CVPreview({
+  data,
+  onBack,
+  inline = false,
+  onExpand,
+}: Props) {
+  const { t } = useTranslation();
   const cvRef = useRef<HTMLDivElement>(null);
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportingType, setExportingType] = useState<string | null>(null);
@@ -644,13 +689,13 @@ export default function CVPreview({ data, onBack }: Props) {
 
       // Profil
       if (p.summary) {
-        sections.push(makeSectionHeader("PROFIL"));
+        sections.push(makeSectionHeader(t("cv.profile")));
         sections.push(makeText(p.summary));
       }
 
       // Ish tajribasi
       if (workExperience.length > 0) {
-        sections.push(makeSectionHeader("ISH TAJRIBASI"));
+        sections.push(makeSectionHeader(t("cv.work")));
         workExperience.forEach((w) => {
           sections.push(
             new Paragraph({
@@ -662,7 +707,7 @@ export default function CVPreview({ data, onBack }: Props) {
                   size: 22,
                 }),
                 new TextRun({
-                  text: `\t${w.startDate} — ${w.current ? "Hozir" : w.endDate}`,
+                  text: `\t${w.startDate} — ${w.current ? t("cv.present") : w.endDate}`,
                   size: 18,
                   color: "94a3b8",
                 }),
@@ -681,7 +726,7 @@ export default function CVPreview({ data, onBack }: Props) {
 
       // Ta'lim
       if (education.length > 0) {
-        sections.push(makeSectionHeader("TA'LIM"));
+        sections.push(makeSectionHeader(t("cv.education")));
         education.forEach((e) => {
           sections.push(
             new Paragraph({
@@ -711,7 +756,7 @@ export default function CVPreview({ data, onBack }: Props) {
       // Ko'nikmalar
       const allSkills = [...skills.technical, ...skills.soft];
       if (allSkills.length > 0) {
-        sections.push(makeSectionHeader("KO'NIKMALAR"));
+        sections.push(makeSectionHeader(t("cv.skills")));
         allSkills.forEach((s) => {
           const dots = "█".repeat(s.level) + "░".repeat(5 - s.level);
           sections.push(makeText(`${s.name}   ${dots}`, { size: 19 }));
@@ -720,7 +765,7 @@ export default function CVPreview({ data, onBack }: Props) {
 
       // Tillar
       if (languages.length > 0) {
-        sections.push(makeSectionHeader("TILLAR"));
+        sections.push(makeSectionHeader(t("cv.languages")));
         languages.forEach((l) =>
           sections.push(makeText(`${l.name}  —  ${l.level}`, { size: 19 })),
         );
@@ -923,7 +968,7 @@ export default function CVPreview({ data, onBack }: Props) {
                 marginLeft: 8,
               }}
             >
-              {w.startDate} — {w.current ? "Hozir" : w.endDate}
+              {w.startDate} — {w.current ? t("cv.present") : w.endDate}
             </p>
           </div>
           <p style={{ fontSize: 10 * fs, color: acol, marginBottom: 2 }}>
@@ -1024,6 +1069,70 @@ export default function CVPreview({ data, onBack }: Props) {
     </div>
   );
 
+  // Loyihalar bloki
+  const ProjectsBlock = ({ acol }: { acol: string }) => (
+    <>
+      {(data.projects || []).map((proj) => (
+        <div key={proj.id} style={{ marginBottom: 10 }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "baseline",
+            }}
+          >
+            <p style={{ fontWeight: 600, fontSize: 11 * fs, color: bodyText }}>
+              {proj.title}{" "}
+              {proj.role && (
+                <span style={{ fontWeight: 400, color: acol }}>— {proj.role}</span>
+              )}
+            </p>
+            {proj.link && (
+              <span style={{ fontSize: 9 * fs, color: acol }}>{proj.link}</span>
+            )}
+          </div>
+          {proj.description && (
+            <p
+              style={{
+                fontSize: 9.5 * fs,
+                color: subText,
+                marginTop: 2,
+                whiteSpace: "pre-line",
+              }}
+            >
+              {proj.description}
+            </p>
+          )}
+        </div>
+      ))}
+    </>
+  );
+
+  // Sertifikatlar bloki
+  const CertsBlock = ({ acol }: { acol: string }) => (
+    <>
+      {(data.certificates || []).map((c) => (
+        <div key={c.id} style={{ marginBottom: 8 }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "baseline",
+            }}
+          >
+            <p style={{ fontWeight: 600, fontSize: 10.5 * fs, color: bodyText }}>
+              {c.title}
+            </p>
+            {c.date && (
+              <span style={{ fontSize: 9 * fs, color: subText }}>{c.date}</span>
+            )}
+          </div>
+          <p style={{ fontSize: 9.5 * fs, color: acol }}>{c.issuer}</p>
+        </div>
+      ))}
+    </>
+  );
+
   // Standart asosiy kontent (sidebar-siz layoutlar uchun)
   const MainContent = ({ acol }: { acol: string }) => (
     <>
@@ -1053,13 +1162,25 @@ export default function CVPreview({ data, onBack }: Props) {
           <EduBlock acol={acol} />
         </div>
       )}
+      {data.projects && data.projects.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <p style={SH({ color: acol })}>LOYIHALAR</p>
+          <ProjectsBlock acol={acol} />
+        </div>
+      )}
+      {data.certificates && data.certificates.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <p style={SH({ color: acol })}>SERTIFIKATLAR VA KURSLAR</p>
+          <CertsBlock acol={acol} />
+        </div>
+      )}
       <SkillLangGrid acol={acol} dotEmpty={dark ? "#334155" : "#e2e8f0"} />
     </>
   );
 
   // ==========================================================
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]">
       {/* ── Export Modal ──────────────────────────────────── */}
       {showExportModal && (
         <div
@@ -1293,49 +1414,88 @@ export default function CVPreview({ data, onBack }: Props) {
       )}
 
       {/* Toolbar */}
-      <div className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-5xl mx-auto flex items-center justify-between px-4 py-3">
-          <Button variant="ghost" onClick={onBack} className="gap-2">
-            <ArrowLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Tahrirlash</span>
-          </Button>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-sm bg-gray-50 rounded-lg px-3 py-1.5 border">
-              <Eye className="w-3.5 h-3.5 text-gray-400" />
-              <span className="text-gray-500 hidden sm:inline">ATS:</span>
+      {inline ? (
+        <div className="sticky top-0 z-20 bg-card/90 backdrop-blur border-b border-border px-3 py-2 flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              Jonli A4 ko'rinish
+            </span>
+            <div className="flex items-center gap-1 text-xs bg-muted px-2 py-0.5 rounded border">
+              <span className="text-muted-foreground">ATS:</span>
               <span className="font-bold" style={{ color: scoreColor }}>
-                {score}%{" "}
-                <span className="hidden sm:inline text-xs font-normal">
-                  ({scoreLabel})
-                </span>
+                {score}%
               </span>
             </div>
-            <Button
-              onClick={() => setShowExportModal(true)}
-              className="gap-2 pr-3"
-              style={{ backgroundColor: accentHex, color: "#fff" }}
-            >
-              <Download className="w-4 h-4" />
-              <span className="hidden sm:inline">Yuklash</span>
-              <span className="sm:hidden">Yuklash</span>
-              <span className="w-px h-4 bg-white/30 mx-1 hidden sm:block" />
-              <svg
-                className="w-3.5 h-3.5 hidden sm:block"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2.5}
-                viewBox="0 0 24 24"
+          </div>
+          <div className="flex items-center gap-2">
+            {onExpand && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs px-2.5"
+                onClick={onExpand}
+                title="Katta ekranda ochish"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
+                Kattalashtirish
+              </Button>
+            )}
+            <Button
+              size="sm"
+              className="h-7 text-xs px-3"
+              style={{ backgroundColor: accentHex, color: "#fff" }}
+              onClick={() => setShowExportModal(true)}
+            >
+              <Download className="w-3.5 h-3.5 mr-1" />
+              Yuklash
             </Button>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border shadow-sm">
+          <div className="max-w-5xl mx-auto flex items-center justify-between px-4 py-3">
+            <Button variant="default" onClick={onBack} className="gap-2 shadow-sm font-semibold">
+              <ArrowLeft className="w-4 h-4" />
+              <span className="hidden sm:inline">{t("builder.edit")}</span>
+            </Button>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 text-sm bg-muted rounded-lg px-3 py-1.5 border border-border">
+                <Eye className="w-3.5 h-3.5 text-muted-foreground" />
+                <span className="text-muted-foreground hidden sm:inline">ATS:</span>
+                <span className="font-bold" style={{ color: scoreColor }}>
+                  {score}%{" "}
+                  <span className="hidden sm:inline text-xs font-normal">
+                    ({scoreLabel})
+                  </span>
+                </span>
+              </div>
+              <Button
+                onClick={() => setShowExportModal(true)}
+                className="gap-2 pr-3 font-semibold shadow-md hover:shadow-lg transition-all"
+                style={{ backgroundColor: accentHex, color: "#fff" }}
+              >
+                <Download className="w-4 h-4" />
+                <span className="hidden sm:inline">{t("builder.download")}</span>
+                <span className="sm:hidden">{t("builder.download")}</span>
+                <span className="w-px h-4 bg-white/30 mx-1 hidden sm:block" />
+                <svg
+                  className="w-3.5 h-3.5 hidden sm:block"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <CvScaleWrapper>
         <div
@@ -1498,7 +1658,7 @@ export default function CVPreview({ data, onBack }: Props) {
                               marginLeft: 8,
                             }}
                           >
-                            {w.startDate} — {w.current ? "Hozir" : w.endDate}
+                            {w.startDate} — {w.current ? t("cv.present") : w.endDate}
                           </p>
                         </div>
                         {w.location && (
@@ -1562,6 +1722,18 @@ export default function CVPreview({ data, onBack }: Props) {
                         )}
                       </div>
                     ))}
+                  </div>
+                )}
+                {data.projects && data.projects.length > 0 && (
+                  <div style={{ marginBottom: 16 }}>
+                    <p style={SH({ color: headerColor })}>LOYIHALAR</p>
+                    <ProjectsBlock acol={headerColor} />
+                  </div>
+                )}
+                {data.certificates && data.certificates.length > 0 && (
+                  <div style={{ marginBottom: 16 }}>
+                    <p style={SH({ color: headerColor })}>SERTIFIKATLAR VA KURSLAR</p>
+                    <CertsBlock acol={headerColor} />
                   </div>
                 )}
                 <SkillLangGrid acol={headerColor} dotEmpty="#e2e8f0" />
@@ -1781,6 +1953,18 @@ export default function CVPreview({ data, onBack }: Props) {
                     <EduBlock acol={headerColor} />
                   </div>
                 )}
+                {data.projects && data.projects.length > 0 && (
+                  <div style={{ marginBottom: 18 }}>
+                    <p style={SH({ color: headerColor })}>LOYIHALAR</p>
+                    <ProjectsBlock acol={headerColor} />
+                  </div>
+                )}
+                {data.certificates && data.certificates.length > 0 && (
+                  <div style={{ marginBottom: 18 }}>
+                    <p style={SH({ color: headerColor })}>SERTIFIKATLAR VA KURSLAR</p>
+                    <CertsBlock acol={headerColor} />
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1903,7 +2087,7 @@ export default function CVPreview({ data, onBack }: Props) {
                               marginLeft: 8,
                             }}
                           >
-                            {w.startDate} — {w.current ? "Hozir" : w.endDate}
+                            {w.startDate} — {w.current ? t("cv.present") : w.endDate}
                           </p>
                         </div>
                         <p
@@ -1994,6 +2178,32 @@ export default function CVPreview({ data, onBack }: Props) {
                         )}
                       </div>
                     ))}
+                  </div>
+                )}
+                {data.projects && data.projects.length > 0 && (
+                  <div style={{ marginBottom: 16 }}>
+                    <p
+                      style={SH({
+                        color: accentHex,
+                        border: "rgba(255,255,255,0.1)",
+                      })}
+                    >
+                      LOYIHALAR
+                    </p>
+                    <ProjectsBlock acol={accentHex} />
+                  </div>
+                )}
+                {data.certificates && data.certificates.length > 0 && (
+                  <div style={{ marginBottom: 16 }}>
+                    <p
+                      style={SH({
+                        color: accentHex,
+                        border: "rgba(255,255,255,0.1)",
+                      })}
+                    >
+                      SERTIFIKATLAR VA KURSLAR
+                    </p>
+                    <CertsBlock acol={accentHex} />
                   </div>
                 )}
                 <SkillLangGrid
@@ -2246,6 +2456,18 @@ export default function CVPreview({ data, onBack }: Props) {
                   <div style={{ marginBottom: 14 }}>
                     <p style={SH({ color: accentHex })}>TA'LIM</p>
                     <EduBlock acol={accentHex} />
+                  </div>
+                )}
+                {data.projects && data.projects.length > 0 && (
+                  <div style={{ marginBottom: 14 }}>
+                    <p style={SH({ color: accentHex })}>LOYIHALAR</p>
+                    <ProjectsBlock acol={accentHex} />
+                  </div>
+                )}
+                {data.certificates && data.certificates.length > 0 && (
+                  <div style={{ marginBottom: 14 }}>
+                    <p style={SH({ color: accentHex })}>SERTIFIKATLAR VA KURSLAR</p>
+                    <CertsBlock acol={accentHex} />
                   </div>
                 )}
               </div>

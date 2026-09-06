@@ -22,6 +22,8 @@ interface Props {
     address: string;
     linkedin: string;
     telegram: string;
+    github?: string;
+    website?: string;
     photo: string | null;
     summary: string;
   };
@@ -70,6 +72,8 @@ const fields = [
     placeholder: "linkedin.com/in/username",
   },
   { key: "telegram", label: "Telegram", icon: Send, placeholder: "@username" },
+  { key: "github", label: "GitHub", icon: Send, placeholder: "github.com/username" },
+  { key: "website", label: "Veb-sayt / Portfolio", icon: MapPin, placeholder: "https://portfolio.uz" },
 ];
 
 export default function StepPersonalInfo({ data, onChange }: Props) {

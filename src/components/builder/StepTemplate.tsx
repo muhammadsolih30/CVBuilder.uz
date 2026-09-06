@@ -1,6 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { CVData, TemplateType, AccentColor, FontType } from "@/types/cv";
-import { Eye, Check, Search, Palette, Type, Layout } from "lucide-react";
+import { Eye, Check, Search, Palette, Type, Layout, Sparkles, SlidersHorizontal } from "lucide-react";
+import { ALL_CATALOG_TEMPLATES, CATEGORIES } from "@/data/templatesCatalog";
+import SmartRecommenderModal from "./SmartRecommenderModal";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   data: CVData;
@@ -970,13 +973,13 @@ const STATIC_SVGS = [
   Svg25,
 ];
 
-function TemplatePreview({ tKey, accent }: { tKey: string; accent: string }) {
+export function TemplatePreview({ tKey, accent }: { tKey: string; accent: string }) {
   const idx = parseInt(tKey.replace("t", ""), 10);
   if (idx >= 1 && idx <= 25) {
     const SvgComp = STATIC_SVGS[idx - 1];
     return <SvgComp a={accent} />;
   }
-  const dynIdx = idx - 26;
+  const dynIdx = Math.abs(idx - 26) % DYN_PALETTES.length;
   if (dynIdx >= 0 && dynIdx < DYN_PALETTES.length) {
     return <DynSvg pal={DYN_PALETTES[dynIdx]} a={accent} />;
   }
@@ -1066,18 +1069,13 @@ const DYN_DESC = [
   "Crisp",
 ];
 
-const ALL_TEMPLATES = [
-  ...STATIC_NAMES.map(([name, desc], i) => ({
-    key: `t${String(i + 1).padStart(3, "0")}` as TemplateType,
-    name,
-    desc,
-  })),
-  ...DYN_PALETTES.map((_, i) => ({
-    key: `t${String(i + 26).padStart(3, "0")}` as TemplateType,
-    name: `${DYN_ADJ[i % DYN_ADJ.length]} ${i + 26}`,
-    desc: DYN_DESC[i % DYN_DESC.length],
-  })),
-];
+const ALL_TEMPLATES = ALL_CATALOG_TEMPLATES.map((t) => ({
+  key: t.id as TemplateType,
+  name: t.name,
+  desc: t.description,
+  category: t.category,
+  badge: t.badge,
+}));
 
 // ─────────────────────────────────────────────────
 // PREVIEW DIALOG
@@ -1171,6 +1169,9 @@ function PreviewModal({
 // ─────────────────────────────────────────────────
 export default function StepTemplate({ data, onChange }: Props) {
   const [search, setSearch] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [visibleLimit, setVisibleLimit] = useState(48);
+  const [isRecommenderOpen, setIsRecommenderOpen] = useState(false);
 
   const safeTemplate = (data?.template as string) || "t001";
   const safeColor = data?.accentColor || "blue";
@@ -1179,24 +1180,45 @@ export default function StepTemplate({ data, onChange }: Props) {
 
   const accentHex = COLORS.find((c) => c.key === safeColor)?.hex || "#2563eb";
 
-  const filtered = ALL_TEMPLATES.filter(
-    (t) =>
-      search === "" ||
-      t.name.toLowerCase().includes(search.toLowerCase()) ||
-      t.desc.toLowerCase().includes(search.toLowerCase()),
-  );
+  const filtered = useMemo(() => {
+    return ALL_TEMPLATES.filter((t) => {
+      const matchCat =
+        selectedCategory === "all" || t.category === selectedCategory;
+      const matchSearch =
+        search === "" ||
+        t.name.toLowerCase().includes(search.toLowerCase()) ||
+        t.desc.toLowerCase().includes(search.toLowerCase());
+      return matchCat && matchSearch;
+    });
+  }, [selectedCategory, search]);
 
   return (
     <div className="max-w-4xl mx-auto space-y-5">
-      {/* Sarlavha */}
-      <div>
-        <h2 className="text-2xl font-bold mb-0.5">Dizayn tanlang</h2>
-        <p className="text-muted-foreground text-sm">
-          Rangni va shriftni tanlang, keyin{" "}
-          <span className="font-semibold text-foreground">100 ta</span> shablon
-          ichidan birini tanlang
-        </p>
+      {/* Sarlavha + Aqlli Tavsiya tugmasi */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 className="text-2xl font-bold mb-0.5">Dizayn tanlang</h2>
+          <p className="text-muted-foreground text-sm">
+            Rang va shriftni tanlang, sohangizga mos{" "}
+            <span className="font-semibold text-foreground">1000+ ta</span> shablon
+            ichidan eng yaxshisini tanlang
+          </p>
+        </div>
+        <Button
+          onClick={() => setIsRecommenderOpen(true)}
+          className="gradient-primary text-white gap-2 shadow-md hover:shadow-lg transition-all"
+        >
+          <Sparkles className="w-4 h-4 text-yellow-300" />
+          <span>Sohamga mos shablon topish</span>
+        </Button>
       </div>
+
+      <SmartRecommenderModal
+        isOpen={isRecommenderOpen}
+        onClose={() => setIsRecommenderOpen(false)}
+        onSelectTemplate={(tId) => onChange("template", tId)}
+        currentTemplateId={safeTemplate}
+      />
 
       {/* ═══════════════════════════════════
           1. RANG — ENG TEPADA
@@ -1364,7 +1386,7 @@ export default function StepTemplate({ data, onChange }: Props) {
       <div>
         <div className="flex items-center gap-2 mb-3">
           <Layout className="w-4 h-4" style={{ color: accentHex }} />
-          <span className="text-sm font-semibold">Shablon</span>
+          <span className="text-sm font-semibold">Shablonlar</span>
           <span className="text-xs text-muted-foreground">
             ({filtered.length} ta)
           </span>
@@ -1375,14 +1397,38 @@ export default function StepTemplate({ data, onChange }: Props) {
               placeholder="Qidirish..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="bg-transparent text-sm outline-none w-28 placeholder:text-muted-foreground"
+              className="bg-transparent text-sm outline-none w-28 sm:w-40 placeholder:text-muted-foreground"
             />
           </div>
         </div>
 
+        {/* Kategoriya tablari */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-3 scrollbar-none">
+          {CATEGORIES.map((cat) => {
+            const isCatActive = selectedCategory === cat.key;
+            return (
+              <button
+                key={cat.key}
+                type="button"
+                onClick={() => {
+                  setSelectedCategory(cat.key);
+                  setVisibleLimit(48);
+                }}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
+                  isCatActive
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-muted/70 text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                {cat.label}
+              </button>
+            );
+          })}
+        </div>
+
         <div
           className="overflow-y-auto rounded-xl pr-0.5"
-          style={{ maxHeight: 480 }}
+          style={{ maxHeight: 520 }}
         >
           <div
             className="grid gap-2"
@@ -1390,7 +1436,7 @@ export default function StepTemplate({ data, onChange }: Props) {
               gridTemplateColumns: "repeat(auto-fill, minmax(88px, 1fr))",
             }}
           >
-            {filtered.map((t) => {
+            {filtered.slice(0, visibleLimit).map((t) => {
               const isSelected = safeTemplate === t.key;
               return (
                 <div key={t.key} className="relative group">
@@ -1407,6 +1453,13 @@ export default function StepTemplate({ data, onChange }: Props) {
                         : undefined,
                     }}
                   >
+                    {/* Badge */}
+                    {t.badge && (
+                      <span className="absolute top-1.5 right-1.5 text-[7px] font-bold px-1 py-0.2 rounded bg-amber-500 text-white shadow-sm z-10">
+                        {t.badge}
+                      </span>
+                    )}
+
                     {/* Preview rasm */}
                     <div
                       className="w-full rounded-md overflow-hidden mb-1.5 border border-gray-100"
@@ -1423,7 +1476,7 @@ export default function StepTemplate({ data, onChange }: Props) {
 
                     {isSelected && (
                       <div
-                        className="absolute top-2 left-2 w-4 h-4 rounded-full flex items-center justify-center"
+                        className="absolute top-2 left-2 w-4 h-4 rounded-full flex items-center justify-center shadow"
                         style={{ backgroundColor: accentHex }}
                       >
                         <Check className="w-2.5 h-2.5 text-white" />
@@ -1442,6 +1495,19 @@ export default function StepTemplate({ data, onChange }: Props) {
               );
             })}
           </div>
+
+          {filtered.length > visibleLimit && (
+            <div className="pt-4 pb-2 text-center">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setVisibleLimit((v) => v + 48)}
+                className="text-xs"
+              >
+                Yana 48 ta shablon yuklash ({filtered.length - visibleLimit} ta qoldi)
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
